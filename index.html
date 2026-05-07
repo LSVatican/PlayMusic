@@ -19,20 +19,25 @@
     </div>
 
     <header>
-        <h1>PlayMusic</h1>
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Cari judul audio..." oninput="searchAudio()">
-            <i class="fa fa-search"></i>
-        </div>
-        <div class="filter-box">
-            <select id="filterSelect" onchange="loadAudioList()">
-                <option value="terbaru">Terbaru</option>
-                <option value="terlama">Terlama</option>
-                <option value="ukuran">Ukuran Terbesar</option>
-            </select>
-            <button class="btn-add" onclick="toggleUploadModal(true)"><i class="fa fa-plus"></i> Unggah</button>
-        </div>
-    </header>
+    <h1>PlayMusic</h1>
+    
+    <div class="search-container">
+        <i class="fa fa-search search-icon"></i>
+        <input type="text" id="searchInput" placeholder="Cari musik favoritmu..." oninput="searchAudio()">
+        <i class="fa fa-times clear-icon" id="clearSearch" onclick="clearSearch()" style="display:none;"></i>
+    </div>
+
+    <div class="filter-wrapper">
+        <button class="filter-chip active" onclick="applyFilter(this, 'terbaru')">Terbaru</button>
+        <button class="filter-chip" onclick="applyFilter(this, 'a-z')">A-Z</button>
+        <button class="filter-chip" onclick="applyFilter(this, 'durasi')">Durasi</button>
+        <button class="filter-chip" onclick="applyFilter(this, 'ukuran')">Ukuran</button>
+    </div>
+
+    <button class="btn-add-floating" onclick="toggleUploadModal(true)">
+        <i class="fa fa-plus"></i>
+    </button>
+</header>
 
     <main id="audioList">
         </main>

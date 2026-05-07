@@ -65,23 +65,60 @@ audioInput.onchange = (e) => {
     reader.readAsDataURL(file);
 };
 
-// Menampilkan List
+let currentFilter = 'terbaru';
+
+// Fungsi untuk mengganti filter aktif
+function applyFilter(element, filterType) {
+    // Hapus class active dari semua chip
+    document.querySelectorAll('.filter-chip').forEach(chip => chip.classList.remove('active'));
+    // Tambah class active ke chip yang diklik
+    element.classList.add('active');
+    
+    currentFilter = filterType;
+    loadAudioList(); // Reload list dengan urutan baru
+}
+
+// Logika Pengurutan Baru
 async function loadAudioList() {
-    const filter = document.getElementById("filterSelect").value;
     const transaction = db.transaction(["songs"], "readonly");
     const store = transaction.objectStore("songs");
     const request = store.getAll();
 
     request.onsuccess = () => {
-        audioList = request.result;
-        
-        // Logika Filter
-        if(filter === "terbaru") audioList.sort((a,b) => b.timestamp - a.timestamp);
-        if(filter === "terlama") audioList.sort((a,b) => a.timestamp - b.timestamp);
-        if(filter === "ukuran") audioList.sort((a,b) => parseFloat(b.size) - parseFloat(a.size));
+        let list = request.result;
 
-        renderUI(audioList);
+        // Logika Filter Berdasarkan Pilihan
+        if (currentFilter === 'terbaru') {
+            list.sort((a, b) => b.timestamp - a.timestamp);
+        } else if (currentFilter === 'a-z') {
+            list.sort((a, b) => a.title.localeCompare(b.title));
+        } else if (currentFilter === 'ukuran') {
+            list.sort((a, b) => parseFloat(b.size) - parseFloat(a.size));
+        } else if (currentFilter === 'durasi') {
+            // Urutkan berdasarkan durasi (jika tersedia)
+            list.sort((a, b) => (b.duration || 0) - (a.duration || 0));
+        }
+
+        renderUI(list);
     };
+}
+
+// Pencarian yang lebih responsif
+function searchAudio() {
+    const query = document.getElementById("searchInput").value.toLowerCase();
+    const clearBtn = document.getElementById("clearSearch");
+    
+    // Tampilkan/sembunyikan tombol hapus teks pencarian
+    clearBtn.style.display = query.length > 0 ? "block" : "none";
+
+    const filtered = audioList.filter(s => s.title.toLowerCase().includes(query));
+    renderUI(filtered);
+}
+
+function clearSearch() {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("clearSearch").style.display = "none";
+    loadAudioList();
 }
 
 function renderUI(list) {
