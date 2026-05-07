@@ -4,77 +4,109 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlayMusic - Daus XD</title>
-    <link rel="stylesheet" href="style.css">
     <link rel="icon" href="/Favicon.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="container">
         <header>
-            <h1>PlayMusic</h1>
+            <h1 class="main-title">PlayMusic</h1>
             <p class="watermark">by Daus XD</p>
         </header>
 
-        <div class="controls-top">
-            <input type="text" id="searchInput" placeholder="Cari judul lagu...">
-            <select id="filterSelect">
-                <option value="terbaru">Terbaru</option>
-                <option value="terlama">Terlama</option>
-                <option value="judul">A-Z (Judul)</option>
-            </select>
-            <button id="openUploadBtn" class="glow-btn">+</button>
+        <div class="top-controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Cari judul audio...">
+            </div>
+            <div class="filter-box">
+                <select id="filterSelect">
+                    <option value="terbaru">Terbaru</option>
+                    <option value="terlama">Terlama</option>
+                    <option value="terakhir">Terakhir Diputar</option>
+                    <option value="custom">A-Z (Judul)</option>
+                </select>
+            </div>
+            <button id="openUploadBtn" class="glow-btn" title="Unggah Audio">+</button>
         </div>
 
-        <div id="audioList" class="audio-list">
-            </div>
+        <main id="audioList" class="audio-list">
+            <div class="empty-state">Belum ada audio. Klik tombol + untuk mengunggah.</div>
+        </main>
     </div>
 
     <div id="permissionModal" class="modal">
-        <div class="modal-content">
-            <h3>Izin Akses Audio</h3>
-            <p>Klik tombol di bawah untuk mengaktifkan pemutar musik di browser ini.</p>
+        <div class="modal-content permission-card">
+            <h3>Izin Suara Diperlukan</h3>
+            <p>Agar audio dapat diputar secara otomatis di latar belakang, website membutuhkan izin akses suara Anda.</p>
             <button id="grantPermission" class="glow-btn">Aktifkan Suara</button>
         </div>
     </div>
 
     <div id="uploadModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content upload-card">
             <span class="close-modal" id="closeUpload">&times;</span>
-            <h3>Unggah Audio</h3>
-            <p class="info">Format: MP3, WAV, OGG</p>
-            <input type="file" id="fileInput" accept=".mp3, .wav, .ogg">
+            <h3>Unggah Audio Baru</h3>
+            <div class="upload-requirements">
+                <p>Persyaratan Format:</p>
+                <ul>
+                    <li>MP3 (Audio Standard)</li>
+                    <li>WAV (High Quality)</li>
+                    <li>OGG (Compressed)</li>
+                </ul>
+            </div>
             
-            <div id="progressContainer" style="display:none;">
+            <div class="input-group">
+                <input type="file" id="fileInput" accept=".mp3, .wav, .ogg" hidden>
+                <label for="fileInput" class="file-label">Pilih File Audio</label>
+                <p id="fileNamePreview">Tidak ada file terpilih</p>
+            </div>
+
+            <div id="progressContainer" class="progress-container" style="display:none;">
                 <div class="progress-bar-bg">
                     <div id="progressBar" class="progress-bar-fill"></div>
                 </div>
-                <p id="progressText">0%</p>
+                <p id="progressText">Menyiapkan... 0%</p>
             </div>
             
-            <button id="uploadBtn" class="glow-btn">Mulai Unggah</button>
+            <button id="uploadBtn" class="glow-btn full-width">Mulai Unggah</button>
         </div>
     </div>
 
-    <div id="playerBar" class="player-bar">
-        <div class="track-info">
-            <div class="marquee">
-                <span id="currentTitle">Pilih Lagu...</span>
-            </div>
-            <small id="currentTimeDisplay">00:00 / 00:00</small>
-        </div>
-        
-        <div class="player-controls">
-    <button id="prevBtn">Prev</button>
-    <button id="playPauseBtn"><span id="playIcon">Play</span></button> 
-    <button id="nextBtn">Next</button>
-    <button id="stopBtn" class="stop-btn">Close</button>
-</div>
+    <div id="playerBar" class="player-bar pink-stroke-glow">
         <div class="seek-container">
             <input type="range" id="seekSlider" value="0" max="100">
         </div>
+
+        <div class="player-inner">
+            <div class="track-info">
+                <div class="marquee-container">
+                    <span id="currentTitle" class="scrolling-text">Pilih audio untuk memutar...</span>
+                </div>
+                <div class="time-info">
+                    <span id="currentTimeDisplay">00:00</span> / <span id="totalTimeDisplay">00:00</span>
+                </div>
+            </div>
+            
+            <div class="player-controls">
+                <button id="prevBtn" class="ctrl-btn" title="Sebelumnya">
+                    <i>Prev</i>
+                </button>
+                <button id="playPauseBtn" class="ctrl-btn main-ctrl" title="Play/Pause">
+                    <span id="playIcon">Play</span>
+                </button>
+                <button id="nextBtn" class="ctrl-btn" title="Selanjutnya">
+                    <i>Next</i>
+                </button>
+                <button id="stopBtn" class="ctrl-btn stop-btn" title="Berhenti">
+                    <i>Close</i>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <audio id="mainAudio"></audio>
+    <audio id="mainAudio" preload="auto"></audio>
+
     <script src="script.js"></script>
 </body>
 </html>
