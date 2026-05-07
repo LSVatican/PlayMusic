@@ -1,114 +1,132 @@
 :root {
-    --pink-main: #ff85a2;
-    --pink-glow: #ffb3c1;
-    --dark-bg: #1a0f12;
-    --text-color: #ffffff;
+    --pink-main: #ff69b4;
+    --pink-dark: #c71585;
+    --glow: 0 0 10px #ff69b4, 0 0 20px #ff69b4;
+    --text-stroke: 1px 1px 2px black;
 }
 
 body {
-    background-color: var(--dark-bg);
-    color: var(--text-color);
-    font-family: 'Segoe UI', sans-serif;
+    background-color: #1a1a1a;
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding-bottom: 100px;
 }
 
-/* Watermark */
 .watermark {
     position: fixed;
-    top: 10px;
-    right: 15px;
-    font-size: 12px;
+    bottom: 80px;
+    right: 20px;
+    opacity: 0.5;
+    font-weight: bold;
     color: var(--pink-main);
-    opacity: 0.7;
-    z-index: 1000;
+    z-index: 100;
 }
 
-/* Header & Glowing Buttons */
+.glowing-pink {
+    border: 2px solid var(--pink-main);
+    box-shadow: var(--glow);
+    border-radius: 15px;
+}
+
 header {
-    padding: 20px;
     text-align: center;
-    border-bottom: 2px solid var(--pink-main);
-    box-shadow: 0 0 15px var(--pink-main);
+    padding: 20px;
+    background: linear-gradient(180deg, #2d1020, #1a1a1a);
 }
 
-.btn-glow {
-    background: var(--pink-main);
-    border: 2px solid #fff;
-    color: white;
+h1 {
+    color: var(--pink-main);
+    text-shadow: var(--text-stroke);
+    font-size: 2.5em;
+}
+
+.btn-main {
+    background-color: var(--pink-main);
+    border: none;
     padding: 10px 20px;
+    color: white;
     border-radius: 20px;
-    box-shadow: 0 0 10px var(--pink-glow);
     cursor: pointer;
+    font-weight: bold;
+    box-shadow: var(--glow);
     transition: 0.3s;
 }
 
-.btn-glow:hover {
-    box-shadow: 0 0 20px var(--pink-main);
+.btn-main:hover {
+    transform: scale(1.05);
 }
 
-/* Audio List Items */
+/* Audio List Styling */
+#audio-list {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
 .audio-item {
-    background: rgba(255, 133, 162, 0.1);
-    margin: 10px;
+    background: #252525;
     padding: 15px;
-    border: 1px solid var(--pink-main);
     border-radius: 10px;
+    border-left: 5px solid var(--pink-main);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
 }
 
-/* Player Bar Background */
-.player-bar {
+.audio-info h4 { margin: 0; color: var(--pink-main); }
+.audio-info span { font-size: 0.8em; color: #aaa; }
+
+/* Modals & Overlays */
+.overlay {
     position: fixed;
-    bottom: 0;
-    width: 100%;
-    background: rgba(26, 15, 18, 0.95);
-    border-top: 3px solid var(--pink-main);
-    padding: 15px;
-    box-shadow: 0 -5px 20px var(--pink-main);
-    display: flex;
-    flex-direction: column;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    justify-content: center;
     align-items: center;
+    z-index: 1000;
+}
+
+.popup {
+    background: #252525;
+    padding: 30px;
+    text-align: center;
+    width: 80%;
+    max-width: 400px;
 }
 
 /* Progress Bar */
 .progress-container {
     width: 100%;
     background: #444;
+    height: 100%;
+    margin: 15px 0;
+    display: none;
     border-radius: 10px;
-    margin: 10px 0;
+    overflow: hidden;
 }
 
 .progress-bar {
+    height: 10px;
     width: 0%;
-    height: 20px;
     background: var(--pink-main);
-    border-radius: 10px;
-    text-align: center;
-    font-size: 12px;
+    box-shadow: var(--glow);
 }
 
-/* Modals & Overlays */
-.modal, .overlay {
+/* Player Bar */
+.player-bar {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.8);
-    display: none;
-    justify-content: center;
+    bottom: 0; width: 100%;
+    background: #2d1020;
+    border-top: 2px solid var(--pink-main);
+    padding: 15px;
+    display: flex;
+    justify-content: space-around;
     align-items: center;
-    z-index: 2000;
+    box-shadow: 0 -5px 15px rgba(255, 105, 180, 0.3);
 }
 
-.modal-content, .overlay-content {
-    background: var(--dark-bg);
-    padding: 30px;
-    border: 2px solid var(--pink-main);
-    border-radius: 15px;
-    text-align: center;
-    box-shadow: 0 0 30px var(--pink-main);
-}
+.hidden { display: none; }

@@ -5,60 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlayMusic - Daus XD</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="/Favicon.png" type="image/x-icon">
+    <link rel="icon" href="/Favicon.png" type="image/png">
 </head>
 <body>
 
-    <div class="watermark">by Daus XD</div>
+    <div class="watermark">Daus XD</div>
+
+    <div id="permission-overlay" class="overlay">
+        <div class="popup glowing-pink">
+            <h3>Izin Suara Browser</h3>
+            <p>Klik tombol di bawah untuk mengaktifkan fitur pemutar audio otomatis.</p>
+            <button onclick="enableAudio()" class="btn-main">Aktifkan Suara</button>
+        </div>
+    </div>
 
     <header>
         <h1>PlayMusic</h1>
         <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Cari judul audio...">
-            <select id="filterSelect">
+            <input type="text" id="search-input" placeholder="Cari judul lagu..." onkeyup="searchAudio()">
+            <select id="filter-select" onchange="filterAudio()">
                 <option value="terbaru">Terbaru</option>
                 <option value="terlama">Terlama</option>
+                <option value="ukuran">Ukuran Terbesar</option>
             </select>
-            <button onclick="openUploadModal()" class="btn-glow">+</button>
         </div>
+        <button class="btn-main" onclick="openUploadModal()">+ Unggah Audio</button>
     </header>
 
-    <main id="audioList">
+    <main id="audio-list">
         </main>
 
-    <div id="uploadModal" class="modal">
-        <div class="modal-content">
+    <div id="upload-modal" class="overlay">
+        <div class="popup glowing-pink">
             <h3>Unggah Audio</h3>
-            <p>Format: MP3, WAV, OGG</p>
-            <input type="file" id="audioInput" accept=".mp3, .wav, .ogg">
-            <div class="progress-container" id="progressContainer" style="display:none;">
-                <div class="progress-bar" id="progressBar">0%</div>
+            <p>Format: .mp3, .wav, .ogg</p>
+            <input type="file" id="file-input" accept=".mp3,.wav,.ogg">
+            <div class="progress-container" id="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
             </div>
             <div class="modal-actions">
-                <button onclick="handleUpload()" class="btn-pink">Unggah</button>
-                <button onclick="closeUploadModal()" class="btn-outline">Batal</button>
+                <button onclick="processUpload()" class="btn-main">Unggah</button>
+                <button onclick="closeUploadModal()" class="btn-secondary">Batal</button>
             </div>
         </div>
     </div>
 
-    <div id="permissionOverlay" class="overlay">
-        <div class="overlay-content">
-            <h2>Izin Suara</h2>
-            <p>Aktifkan suara untuk memulai pengalaman musik yang elegan.</p>
-            <button onclick="enableAudio()" class="btn-glow">Aktifkan Suara</button>
-        </div>
-    </div>
-
-    <div id="playerBar" class="player-bar" style="display:none;">
+    <div id="player-bar" class="player-bar hidden">
         <div class="player-info">
-            <marquee id="currentTitle">Judul Lagu</marquee>
+            <span id="current-title">Judul Lagu</span>
         </div>
         <div class="player-controls">
             <button onclick="prevAudio()">⏮</button>
-            <button id="playPauseBtn" onclick="togglePlay()">▶</button>
+            <button id="play-pause-btn" onclick="togglePlay()">▶</button>
             <button onclick="nextAudio()">⏭</button>
-            <button onclick="stopAudio()" class="close-player">✖</button>
+            <button onclick="stopAudio()" class="btn-close">✖</button>
         </div>
+        <audio id="main-audio"></audio>
     </div>
 
     <script src="script.js"></script>
