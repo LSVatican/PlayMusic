@@ -2,158 +2,133 @@ let db;
 let currentAudio = new Audio();
 let audioList = [];
 let currentIndex = -1;
+let activeFilter = 'terbaru';
 
-// Inisialisasi Database
-const request = indexedDB.open("PlayMusicDB", 1);
-request.onupgradeneeded = (e) => {
+// 1. Inisialisasi Database (IndexedDB)
+const dbReq = indexedDB.open("PlayMusicDB", 1);
+dbReq.onupgradeneeded = (e) => {
     db = e.target.result;
     db.createObjectStore("songs", { keyPath: "id", autoIncrement: true });
 };
-request.onsuccess = (e) => {
+dbReq.onsuccess = (e) => {
     db = e.target.result;
-    checkAudioPermission();
+    checkPermission();
     loadAudioList();
 };
 
-// Izin Audio Browser
-function checkAudioPermission() {
-    if (localStorage.getItem("audioPerm") === "granted") {
+// 2. Izin Suara Browser
+function checkPermission() {
+    if (localStorage.getItem("playMusicPerm") === "granted") {
         document.getElementById("permissionOverlay").style.display = "none";
     }
 }
 
 function enableAudio() {
-    localStorage.setItem("audioPerm", "granted");
+    localStorage.setItem("playMusicPerm", "granted");
     document.getElementById("permissionOverlay").style.display = "none";
+    // Play audio kosong sebentar untuk "membuka" kunci browser
+    currentAudio.play().catch(() => {}); 
 }
 
-// Unggah Audio
+// 3. Sistem Unggah dengan Progress Bar
 const audioInput = document.getElementById("audioInput");
 audioInput.onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    document.getElementById("progressWrapper").style.display = "block";
+    const progressWrapper = document.getElementById("progressWrapper");
+    progressWrapper.style.display = "block";
 
-    reader.onprogress = (event) => {
-        if (event.lengthComputable) {
-            const percent = Math.round((event.loaded / event.total) * 100);
-            document.getElementById("progressBar").style.size = percent + "%"; // Custom Bar
+    reader.onprogress = (evt) => {
+        if (evt.lengthComputable) {
+            const percent = Math.round((evt.loaded / evt.total) * 100);
             document.getElementById("progressBar").style.width = percent + "%";
             document.getElementById("progressText").innerText = percent + "%";
         }
     };
 
-    reader.onload = (event) => {
+    reader.onload = (evt) => {
         const songData = {
-            title: file.name,
-            data: event.target.result,
+            title: file.name.replace(/\.[^/.]+$/, ""),
+            data: evt.target.result,
             size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
-            date: new Date().toLocaleString(),
+            date: new Date().toLocaleDateString(),
             timestamp: Date.now()
         };
 
-        const transaction = db.transaction(["songs"], "readwrite");
-        transaction.objectStore("songs").add(songData);
-        transaction.oncomplete = () => {
+        const tx = db.transaction(["songs"], "readwrite");
+        tx.objectStore("songs").add(songData);
+        tx.oncomplete = () => {
             toggleUploadModal(false);
             loadAudioList();
-            document.getElementById("progressWrapper").style.display = "none";
+            progressWrapper.style.display = "none";
+            document.getElementById("progressBar").style.width = "0%";
         };
     };
     reader.readAsDataURL(file);
 };
 
-let currentFilter = 'terbaru';
-
-// Fungsi untuk mengganti filter aktif
-function applyFilter(element, filterType) {
-    // Hapus class active dari semua chip
-    document.querySelectorAll('.filter-chip').forEach(chip => chip.classList.remove('active'));
-    // Tambah class active ke chip yang diklik
-    element.classList.add('active');
-    
-    currentFilter = filterType;
-    loadAudioList(); // Reload list dengan urutan baru
-}
-
-// Logika Pengurutan Baru
+// 4. Load & Filter Data
 async function loadAudioList() {
-    const transaction = db.transaction(["songs"], "readonly");
-    const store = transaction.objectStore("songs");
-    const request = store.getAll();
+    const tx = db.transaction(["songs"], "readonly");
+    const store = tx.objectStore("songs");
+    const req = store.getAll();
 
-    request.onsuccess = () => {
-        let list = request.result;
-
-        // Logika Filter Berdasarkan Pilihan
-        if (currentFilter === 'terbaru') {
-            list.sort((a, b) => b.timestamp - a.timestamp);
-        } else if (currentFilter === 'a-z') {
-            list.sort((a, b) => a.title.localeCompare(b.title));
-        } else if (currentFilter === 'ukuran') {
-            list.sort((a, b) => parseFloat(b.size) - parseFloat(a.size));
-        } else if (currentFilter === 'durasi') {
-            // Urutkan berdasarkan durasi (jika tersedia)
-            list.sort((a, b) => (b.duration || 0) - (a.duration || 0));
-        }
-
-        renderUI(list);
+    req.onsuccess = () => {
+        audioList = req.result;
+        applyCurrentSort();
     };
 }
 
-// Pencarian yang lebih responsif
-function searchAudio() {
-    const query = document.getElementById("searchInput").value.toLowerCase();
-    const clearBtn = document.getElementById("clearSearch");
+function applyFilter(btn, type) {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = type;
+    applyCurrentSort();
+}
+
+function applyCurrentSort() {
+    let sorted = [...audioList];
+    if (activeFilter === 'terbaru') sorted.sort((a,b) => b.timestamp - a.timestamp);
+    if (activeFilter === 'terlama') sorted.sort((a,b) => a.timestamp - b.timestamp);
+    if (activeFilter === 'a-z') sorted.sort((a,b) => a.title.localeCompare(b.title));
+    if (activeFilter === 'ukuran') sorted.sort((a,b) => parseFloat(b.size) - parseFloat(a.size));
     
-    // Tampilkan/sembunyikan tombol hapus teks pencarian
-    clearBtn.style.display = query.length > 0 ? "block" : "none";
-
-    const filtered = audioList.filter(s => s.title.toLowerCase().includes(query));
-    renderUI(filtered);
+    renderList(sorted);
 }
 
-function clearSearch() {
-    document.getElementById("searchInput").value = "";
-    document.getElementById("clearSearch").style.display = "none";
-    loadAudioList();
-}
-
-function renderUI(list) {
+function renderList(list) {
     const container = document.getElementById("audioList");
-    container.innerHTML = "";
+    container.innerHTML = list.length === 0 ? '<p style="text-align:center; opacity:0.5;">Belum ada musik.</p>' : "";
     list.forEach((song, index) => {
         container.innerHTML += `
-            <div class="audio-item" onclick="playAudio(${index})">
-                <div>
-                    <strong>${song.title}</strong><br>
-                    <small>${song.date} | ${song.size}</small>
+            <div class="audio-item" onclick="playAudio(${index}, '${song.title}')">
+                <div style="flex:1">
+                    <strong class="truncate">${song.title}</strong><br>
+                    <small style="opacity:0.6">${song.date} • ${song.size}</small>
                 </div>
-                <button onclick="confirmDelete(event, ${song.id})" class="btn-del">
-                    <i class="fa fa-trash"></i>
+                <button class="btn-del" onclick="deleteSong(event, ${song.id})" style="background:none; border:none; color:var(--pink-main)">
+                    <i class="fa fa-trash-alt"></i>
                 </button>
             </div>
         `;
     });
 }
 
-// Kontrol Pemutar
-function playAudio(index) {
+// 5. Kontrol Pemutar & Media Session
+function playAudio(index, title) {
     currentIndex = index;
     const song = audioList[index];
     currentAudio.src = song.data;
     currentAudio.play();
-    
+
     document.getElementById("playerBar").style.display = "flex";
-    document.getElementById("playerTitle").innerText = "Memutar: " + song.title;
+    document.getElementById("playerTitle").innerText = song.title;
     document.getElementById("playBtn").innerHTML = '<i class="fa fa-pause"></i>';
     
-    // TAMBAHKAN BARIS INI:
     updateMediaMetadata(song);
-    
-    updateDuration();
+    updateTimeline();
 }
 
 function togglePlay() {
@@ -166,20 +141,14 @@ function togglePlay() {
     }
 }
 
-function updateDuration() {
-    currentAudio.ontimeupdate = () => {
-        const cur = formatTime(currentAudio.currentTime);
-        const dur = formatTime(currentAudio.duration || 0);
-        document.getElementById("playerTime").innerText = `${cur} / ${dur}`;
-        document.getElementById("seekSlider").max = currentAudio.duration;
-        document.getElementById("seekSlider").value = currentAudio.currentTime;
-    };
+function playNext() {
+    if (currentIndex < audioList.length - 1) playAudio(currentIndex + 1);
+    else playAudio(0);
 }
 
-function formatTime(sec) {
-    let m = Math.floor(sec / 60);
-    let s = Math.floor(sec % 60);
-    return `${m}:${s < 10 ? '0' + s : s}`;
+function playPrev() {
+    if (currentIndex > 0) playAudio(currentIndex - 1);
+    else playAudio(audioList.length - 1);
 }
 
 function stopAudio() {
@@ -188,91 +157,66 @@ function stopAudio() {
     document.getElementById("playerBar").style.display = "none";
 }
 
-// Fitur Hapus
-function confirmDelete(e, id) {
-    e.stopPropagation();
-    if (confirm("Hapus audio ini secara permanen?")) {
-        const transaction = db.transaction(["songs"], "readwrite");
-        transaction.objectStore("songs").delete(id);
-        transaction.oncomplete = () => loadAudioList();
-    }
+function updateTimeline() {
+    currentAudio.ontimeupdate = () => {
+        const cur = formatTime(currentAudio.currentTime);
+        const dur = formatTime(currentAudio.duration || 0);
+        document.getElementById("playerTime").innerText = `${cur} / ${dur}`;
+        document.getElementById("seekSlider").max = currentAudio.duration || 0;
+        document.getElementById("seekSlider").value = currentAudio.currentTime;
+    };
+    currentAudio.onended = () => playNext();
 }
 
-// Pencarian
-function searchAudio() {
-    const query = document.getElementById("searchInput").value.toLowerCase();
-    const filtered = audioList.filter(s => s.title.toLowerCase().includes(query));
-    renderUI(filtered);
+function seekAudio() {
+    currentAudio.currentTime = document.getElementById("seekSlider").value;
 }
 
-function toggleUploadModal(show) {
-    document.getElementById("uploadModal").style.display = show ? "flex" : "none";
+function formatTime(s) {
+    const mins = Math.floor(s / 60);
+    const secs = Math.floor(s % 60);
+    return `${mins}:${secs < 10 ? '0' + secs : secs}`;
 }
 
-// --- FITUR PERBAIKAN NEXT & PREV ---
-
-function playNext() {
-    if (audioList.length === 0) return; // Jika list kosong, abaikan
-    
-    currentIndex++;
-    
-    // Jika sudah di akhir list, kembali ke awal (loop)
-    if (currentIndex >= audioList.length) {
-        currentIndex = 0;
-    }
-    
-    playAudio(currentIndex);
-}
-
-function playPrev() {
-    if (audioList.length === 0) return; // Jika list kosong, abaikan
-    
-    currentIndex--;
-    
-    // Jika di awal list, pindah ke audio paling terakhir
-    if (currentIndex < 0) {
-        currentIndex = audioList.length - 1;
-    }
-    
-    playAudio(currentIndex);
-}
-
-// Fitur Tambahan: Otomatis putar lagu selanjutnya jika lagu sekarang selesai
-currentAudio.onended = () => {
-    playNext();
-};
-
-// --- MENGHUBUNGKAN KE KONTROL MEDIA BAWAAN BROWSER/SISTEM ---
-if ('mediaSession' in navigator) {
-    navigator.mediaSession.setActionHandler('play', () => {
-        togglePlay();
-    });
-    navigator.mediaSession.setActionHandler('pause', () => {
-        togglePlay();
-    });
-    navigator.mediaSession.setActionHandler('previoustrack', () => {
-        playPrev();
-    });
-    navigator.mediaSession.setActionHandler('nexttrack', () => {
-        playNext();
-    });
-}
-
-// Fungsi untuk memperbarui info lagu di panel browser
+// 6. Media Session API (Next/Prev Sistem)
 function updateMediaMetadata(song) {
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
             title: song.title,
             artist: 'Daus XD',
             album: 'PlayMusic',
-            artwork: [
-                { src: 'favicon.ico', sizes: '96x96', type: 'image/x-icon' },
-                { src: '/Favicon.png', sizes: '128x128', type: 'image/png' },
-                { src: '/Favicon.png', sizes: '192x192', type: 'image/png' },
-                { src: '/Favicon.png', sizes: '256x256', type: 'image/png' },
-                { src: '/Favicon.png', sizes: '384x384', type: 'image/png' },
-                { src: '/Favicon.png', sizes: '512x512', type: 'image/png' }
-            ]
+            artwork: [{ src: '/Favicon.png', sizes: '512x512', type: 'image/png' }]
         });
+        
+        navigator.mediaSession.setActionHandler('play', togglePlay);
+        navigator.mediaSession.setActionHandler('pause', togglePlay);
+        navigator.mediaSession.setActionHandler('previoustrack', playPrev);
+        navigator.mediaSession.setActionHandler('nexttrack', playNext);
     }
+}
+
+// 7. Fitur Hapus & Cari
+function deleteSong(e, id) {
+    e.stopPropagation();
+    if (confirm("Hapus lagu ini?")) {
+        const tx = db.transaction(["songs"], "readwrite");
+        tx.objectStore("songs").delete(id);
+        tx.oncomplete = () => loadAudioList();
+    }
+}
+
+function searchAudio() {
+    const query = document.getElementById("searchInput").value.toLowerCase();
+    document.getElementById("clearSearch").style.display = query ? "block" : "none";
+    const filtered = audioList.filter(s => s.title.toLowerCase().includes(query));
+    renderList(filtered);
+}
+
+function clearSearch() {
+    document.getElementById("searchInput").value = "";
+    searchAudio();
+}
+
+function toggleUploadModal(show) {
+    document.getElementById("uploadModal").style.display = show ? "flex" : "none";
 }
