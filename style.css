@@ -1,145 +1,110 @@
 :root {
-    --pink-main: #ff69b4;
-    --pink-glow: #ff1493;
-    --dark-bg: #1a0a12;
-    --glass: rgba(255, 105, 180, 0.1);
+    --pink-main: #ff85a2;
+    --pink-glow: #ffb3c6;
+    --text-white: #fff;
+    --stroke: 2px solid #ff4d6d;
 }
 
 body {
-    background-color: var(--dark-bg);
-    color: white;
+    background-color: #1a1a1a;
+    color: var(--text-white);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
-    padding-bottom: 100px;
 }
 
-.watermark {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    font-size: 12px;
-    opacity: 0.5;
-    z-index: 1000;
-}
-
-header {
-    padding: 20px;
-    text-align: center;
-    border-bottom: 2px solid var(--pink-main);
-    box-shadow: 0 0 15px var(--pink-glow);
-}
+.container { padding: 20px; }
 
 h1 {
     color: var(--pink-main);
     text-shadow: 0 0 10px var(--pink-glow);
-    margin-bottom: 15px;
+    text-align: center;
 }
 
-.search-container input {
-    width: 80%;
-    padding: 10px;
+.watermark {
+    text-align: center;
+    font-size: 12px;
+    opacity: 0.7;
+    margin-top: -10px;
+}
+
+/* Pink Elegan & Stroke */
+button, input, select {
     background: transparent;
-    border: 1px solid var(--pink-main);
-    border-radius: 20px;
+    border: var(--stroke);
     color: white;
-    box-shadow: inset 0 0 5px var(--pink-glow);
-    outline: none;
-}
-
-.glow-btn {
-    background: var(--pink-main);
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 0 10px var(--pink-glow);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px var(--pink-main);
     transition: 0.3s;
 }
 
-.glow-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px var(--pink-glow);
+button:hover {
+    background: var(--pink-main);
+    box-shadow: 0 0 15px var(--pink-glow);
 }
 
-/* Audio Card */
+/* Audio List Item */
 .audio-item {
+    background: rgba(255, 133, 162, 0.1);
+    border: 1px solid var(--pink-main);
+    margin: 10px 0;
+    padding: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px;
-    margin: 10px;
-    background: var(--glass);
-    border-left: 5px solid var(--pink-main);
-    border-radius: 8px;
-    cursor: pointer;
+    border-radius: 10px;
 }
 
-.audio-info h4 { margin: 0; color: var(--pink-main); }
-.audio-info small { opacity: 0.7; }
-
-/* Modals */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 2000;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8);
-}
-
-.modal-content {
-    background: var(--dark-bg);
-    margin: 20% auto;
-    padding: 20px;
-    width: 80%;
-    border: 2px solid var(--pink-main);
-    box-shadow: 0 0 20px var(--pink-glow);
-    text-align: center;
-    border-radius: 15px;
-}
-
-/* Progress Bar */
-.progress-bar-bg {
-    width: 100%;
-    background: #333;
-    height: 10px;
-    border-radius: 5px;
-    margin-top: 15px;
-}
-
-.progress-bar-fill {
-    width: 0%;
-    height: 100%;
-    background: var(--pink-main);
-    box-shadow: 0 0 10px var(--pink-glow);
-    border-radius: 5px;
-}
-
-/* Player Bar */
+/* Player Bar Bottom */
 .player-bar {
     position: fixed;
     bottom: 0;
     width: 100%;
-    background: rgba(26, 10, 18, 0.95);
-    border-top: 2px solid var(--pink-main);
+    background: rgba(0, 0, 0, 0.9);
+    border-top: var(--stroke);
+    padding: 15px;
     display: flex;
-    justify-content: space-between;
-    padding: 10px 20px;
-    box-sizing: border-box;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 -5px 15px var(--pink-glow);
+}
+
+#playerTitle {
+    width: 200px;
+    color: var(--pink-main);
+    font-weight: bold;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    justify-content: center;
     align-items: center;
 }
 
-.player-thumb {
-    width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--pink-main);
-    margin-right: 10px;
+.modal-content {
+    background: #222;
+    padding: 30px;
+    border: var(--stroke);
+    border-radius: 15px;
+    text-align: center;
+    width: 80%;
 }
 
-.player-controls button {
-    background: transparent;
-    border: none;
-    color: var(--pink-main);
-    font-size: 20px;
-    margin: 0 5px;
-    cursor: pointer;
+#progressContainer {
+    width: 100%;
+    background: #444;
+    height: 10px;
+    margin: 15px 0;
+    border-radius: 5px;
+}
+
+#progressBar {
+    width: 0%;
+    height: 100%;
+    background: var(--pink-main);
+    box-shadow: 0 0 10px var(--pink-glow);
 }
