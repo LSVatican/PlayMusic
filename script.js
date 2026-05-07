@@ -1,7 +1,6 @@
 let db;
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let currentAudio = new Audio();
-let playlist = [];
+let audioList = [];
 let currentIndex = -1;
 
 // Inisialisasi Database
@@ -12,142 +11,160 @@ request.onupgradeneeded = (e) => {
 };
 request.onsuccess = (e) => {
     db = e.target.result;
-    loadSongs();
     checkAudioPermission();
+    loadAudioList();
 };
 
-// Cek Izin Suara
+// Izin Audio Browser
 function checkAudioPermission() {
-    if (localStorage.getItem("audioPermitted") !== "true") {
-        document.getElementById("permissionModal").style.display = "block";
+    if (localStorage.getItem("audioPerm") === "granted") {
+        document.getElementById("permissionOverlay").style.display = "none";
     }
 }
 
-document.getElementById("grantPermission").onclick = () => {
-    audioContext.resume().then(() => {
-        localStorage.setItem("audioPermitted", "true");
-        document.getElementById("permissionModal").style.display = "none";
-    });
-};
+function enableAudio() {
+    localStorage.setItem("audioPerm", "granted");
+    document.getElementById("permissionOverlay").style.display = "none";
+}
 
-// Modal Logic
-const uploadModal = document.getElementById("uploadModal");
-document.getElementById("openUploadBtn").onclick = () => uploadModal.style.display = "block";
-document.querySelector(".close-btn").onclick = () => uploadModal.style.display = "none";
+// Unggah Audio
+const audioInput = document.getElementById("audioInput");
+audioInput.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-// Proses Unggah
-document.getElementById("startUploadBtn").onclick = async () => {
-    const fileInput = document.getElementById("audioFileInput");
-    const file = fileInput.files[0];
-    if (!file) return alert("Pilih file terlebih dahulu!");
-
-    const progressContainer = document.getElementById("progressContainer");
-    const progressBar = document.getElementById("progressBar");
-    progressContainer.style.display = "block";
-
-    // Simulasi Progress Bar berdasarkan ukuran (karena IndexedDB cepat)
-    let progress = 0;
-    const interval = setInterval(() => {
-        progress += 5;
-        progressBar.style.width = progress + "%";
-        progressBar.innerText = progress + "%";
-        if (progress >= 100) {
-            clearInterval(interval);
-            saveToDB(file);
-        }
-    }, 50);
-};
-
-function saveToDB(file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
-        const transaction = db.transaction(["songs"], "readwrite");
-        const store = transaction.objectStore("songs");
-        
+    document.getElementById("progressWrapper").style.display = "block";
+
+    reader.onprogress = (event) => {
+        if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            document.getElementById("progressBar").style.size = percent + "%"; // Custom Bar
+            document.getElementById("progressBar").style.width = percent + "%";
+            document.getElementById("progressText").innerText = percent + "%";
+        }
+    };
+
+    reader.onload = (event) => {
         const songData = {
             title: file.name,
-            data: e.target.result,
-            size: (file.size / 1024 / 1024).toFixed(2) + " MB",
+            data: event.target.result,
+            size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
             date: new Date().toLocaleString(),
-            type: file.type
+            timestamp: Date.now()
         };
 
-        store.add(songData);
+        const transaction = db.transaction(["songs"], "readwrite");
+        transaction.objectStore("songs").add(songData);
         transaction.oncomplete = () => {
-            uploadModal.style.display = "none";
-            document.getElementById("progressContainer").style.display = "none";
-            loadSongs();
+            toggleUploadModal(false);
+            loadAudioList();
+            document.getElementById("progressWrapper").style.display = "none";
         };
     };
     reader.readAsDataURL(file);
-}
+};
 
-// Load dan Tampilkan Lagu
-function loadSongs() {
-    const store = db.transaction("songs").objectStore("songs");
-    const list = document.getElementById("audioList");
-    list.innerHTML = "";
-    playlist = [];
+// Menampilkan List
+async function loadAudioList() {
+    const filter = document.getElementById("filterSelect").value;
+    const transaction = db.transaction(["songs"], "readonly");
+    const store = transaction.objectStore("songs");
+    const request = store.getAll();
 
-    store.openCursor().onsuccess = (e) => {
-        const cursor = e.target.result;
-        if (cursor) {
-            playlist.push(cursor.value);
-            renderSongItem(cursor.value);
-            cursor.continue();
-        }
+    request.onsuccess = () => {
+        audioList = request.result;
+        
+        // Logika Filter
+        if(filter === "terbaru") audioList.sort((a,b) => b.timestamp - a.timestamp);
+        if(filter === "terlama") audioList.sort((a,b) => a.timestamp - b.timestamp);
+        if(filter === "ukuran") audioList.sort((a,b) => parseFloat(b.size) - parseFloat(a.size));
+
+        renderUI(audioList);
     };
 }
 
-function renderSongItem(song) {
-    const div = document.createElement("div");
-    div.className = "audio-item";
-    div.innerHTML = `
-        <div>
-            <strong>${song.title}</strong><br>
-            <small>${song.size} | ${song.date}</small>
-        </div>
-        <button onclick="deleteSong(event, ${song.id})" style="background:none; border:none; color:pink; cursor:pointer;">Hapus</button>
-    `;
-    div.onclick = () => playSong(song.id);
-    document.getElementById("audioList").appendChild(div);
+function renderUI(list) {
+    const container = document.getElementById("audioList");
+    container.innerHTML = "";
+    list.forEach((song, index) => {
+        container.innerHTML += `
+            <div class="audio-item" onclick="playAudio(${index})">
+                <div>
+                    <strong>${song.title}</strong><br>
+                    <small>${song.date} | ${song.size}</small>
+                </div>
+                <button onclick="confirmDelete(event, ${song.id})" class="btn-del">
+                    <i class="fa fa-trash"></i>
+                </button>
+            </div>
+        `;
+    });
 }
 
-// Player Control
-function playSong(id) {
-    const song = playlist.find(s => s.id === id);
-    currentIndex = playlist.indexOf(song);
-    
+// Kontrol Pemutar
+function playAudio(index) {
+    currentIndex = index;
+    const song = audioList[index];
     currentAudio.src = song.data;
     currentAudio.play();
     
-    document.getElementById("playerBar").style.display = "block";
-    document.getElementById("currentTitle").innerText = song.title;
-    document.getElementById("playPauseBtn").innerText = "⏸";
+    document.getElementById("playerBar").style.display = "flex";
+    document.getElementById("playerTitle").innerText = "Memutar: " + song.title;
+    document.getElementById("playBtn").innerHTML = '<i class="fa fa-pause"></i>';
+    
+    updateDuration();
 }
 
-document.getElementById("playPauseBtn").onclick = () => {
+function togglePlay() {
     if (currentAudio.paused) {
         currentAudio.play();
-        document.getElementById("playPauseBtn").innerText = "⏸";
+        document.getElementById("playBtn").innerHTML = '<i class="fa fa-pause"></i>';
     } else {
         currentAudio.pause();
-        document.getElementById("playPauseBtn").innerText = "▶";
+        document.getElementById("playBtn").innerHTML = '<i class="fa fa-play"></i>';
     }
-};
+}
 
-document.getElementById("stopBtn").onclick = () => {
+function updateDuration() {
+    currentAudio.ontimeupdate = () => {
+        const cur = formatTime(currentAudio.currentTime);
+        const dur = formatTime(currentAudio.duration || 0);
+        document.getElementById("playerTime").innerText = `${cur} / ${dur}`;
+        document.getElementById("seekSlider").max = currentAudio.duration;
+        document.getElementById("seekSlider").value = currentAudio.currentTime;
+    };
+}
+
+function formatTime(sec) {
+    let m = Math.floor(sec / 60);
+    let s = Math.floor(sec % 60);
+    return `${m}:${s < 10 ? '0' + s : s}`;
+}
+
+function stopAudio() {
     currentAudio.pause();
     currentAudio.currentTime = 0;
     document.getElementById("playerBar").style.display = "none";
-};
+}
 
-// Fitur Hapus dengan Konfirmasi
-function deleteSong(event, id) {
-    event.stopPropagation();
-    if (confirm("Apakah Anda yakin ingin menghapus lagu ini secara permanen?")) {
+// Fitur Hapus
+function confirmDelete(e, id) {
+    e.stopPropagation();
+    if (confirm("Hapus audio ini secara permanen?")) {
         const transaction = db.transaction(["songs"], "readwrite");
         transaction.objectStore("songs").delete(id);
-        transaction.oncomplete = () => loadSongs();
+        transaction.oncomplete = () => loadAudioList();
     }
+}
+
+// Pencarian
+function searchAudio() {
+    const query = document.getElementById("searchInput").value.toLowerCase();
+    const filtered = audioList.filter(s => s.title.toLowerCase().includes(query));
+    renderUI(filtered);
+}
+
+function toggleUploadModal(show) {
+    document.getElementById("uploadModal").style.display = show ? "flex" : "none";
 }
