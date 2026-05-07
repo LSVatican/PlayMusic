@@ -1,9 +1,5 @@
+// Konfigurasi Database IndexedDB
 let db;
-let currentAudio = new Audio();
-let playlist = [];
-let currentIndex = -1;
-
-// 1. Inisialisasi Database (IndexedDB)
 const request = indexedDB.open("PlayMusicDB", 1);
 
 request.onupgradeneeded = (e) => {
@@ -13,201 +9,175 @@ request.onupgradeneeded = (e) => {
 
 request.onsuccess = (e) => {
     db = e.target.result;
-    loadSongs();
+    renderList();
+    checkAudioPermission();
 };
 
-// 2. Perizinan Suara Browser
-// Browser modern memblokir autoplay. Kita harus memicu 'play' lewat interaksi.
-function checkPermission() {
-    const context = new (window.AudioContext || window.webkitAudioContext)();
-    if (context.state === 'suspended') {
-        // Tampilkan peringatan sistem bawaan jika diperlukan
-        console.log("Menunggu interaksi pengguna untuk suara...");
+// State Pemutar
+let currentAudio = new Audio();
+let playlist = [];
+let currentIndex = -1;
+
+// Perizinan Suara Browser
+function checkAudioPermission() {
+    if (navigator.userActivation && !navigator.userActivation.isActive) {
+        alert("Ketuk di mana saja pada layar untuk memberikan izin suara browser.");
     }
 }
 
-// 3. Fungsi Unggah
-async function uploadAudio() {
-    const fileInput = document.getElementById('fileInput');
-    const file = fileInput.files[0];
-    
-    if (!file) return alert("Pilih file dulu!");
-    
-    const validFormats = ['audio/mpeg', 'audio/wav', 'audio/ogg'];
-    if (!validFormats.includes(file.type)) return alert("Format tidak didukung!");
+// Fitur Unggah dengan Progress Bar
+const uploadModal = document.getElementById('uploadModal');
+document.getElementById('openUploadBtn').onclick = () => uploadModal.style.display = 'block';
+document.getElementById('closeModalBtn').onclick = () => uploadModal.style.display = 'none';
 
-    const progressFill = document.getElementById('progressBarFill');
-    const progressText = document.getElementById('progressPercent');
-    document.getElementById('progressContainer').style.display = 'block';
+document.getElementById('audioInput').onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    // Simulasi Progress Bar (Karena IndexedDB lokal sangat cepat)
-    let progress = 0;
-    const interval = setInterval(() => {
-        progress += 10;
-        progressFill.style.width = progress + "%";
-        progressText.innerText = progress + "%";
-        
-        if (progress >= 100) {
-            clearInterval(interval);
-            saveToDB(file);
-        }
-    }, 100);
-}
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    progressContainer.style.display = 'block';
 
-function saveToDB(file) {
     const reader = new FileReader();
-    reader.onload = function(e) {
-        const transaction = db.transaction(["songs"], "readwrite");
-        const song = {
-            name: file.name,
-            data: e.target.result,
-            type: file.type,
-            size: (file.size / 1024 / 1024).toFixed(2) + " MB",
-            date: new Date().toLocaleString()
+    
+    reader.onprogress = (data) => {
+        if (data.lengthComputable) {
+            const progress = Math.round((data.loaded / data.total) * 100);
+            progressBar.style.width = progress + '%';
+            progressBar.innerHTML = progress + '%';
+        }
+    };
+
+    reader.onload = (event) => {
+        const songData = {
+            title: file.name,
+            data: event.target.result,
+            size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
+            date: new Date().toLocaleString(),
+            timestamp: Date.now()
         };
+
+        const transaction = db.transaction(["songs"], "readwrite");
+        transaction.objectStore("songs").add(songData);
         
-        transaction.objectStore("songs").add(song);
         transaction.oncomplete = () => {
-            togglePopup(false);
-            loadSongs();
+            uploadModal.style.display = 'none';
+            progressContainer.style.display = 'none';
+            renderList();
         };
     };
-    reader.readAsArrayBuffer(file);
-}
 
-// 4. Load & Render List
-function loadSongs() {
+    reader.readAsDataURL(file);
+};
+
+// Render List Audio
+function renderList() {
+    const list = document.getElementById('audioList');
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const filter = document.getElementById('filterSelect').value;
+
     const transaction = db.transaction(["songs"], "readonly");
     const store = transaction.objectStore("songs");
     const request = store.getAll();
 
     request.onsuccess = () => {
-        playlist = request.result;
-        renderList(playlist);
+        let songs = request.result;
+        playlist = songs;
+
+        // Pencarian
+        songs = songs.filter(s => s.title.toLowerCase().includes(search));
+
+        // Filter
+        if (filter === "terbaru") songs.sort((a, b) => b.timestamp - a.timestamp);
+        if (filter === "terlama") songs.sort((a, b) => a.timestamp - b.timestamp);
+
+        list.innerHTML = "";
+        songs.forEach((song, index) => {
+            const item = document.createElement('div');
+            item.className = 'audio-item';
+            item.innerHTML = `
+                <div>
+                    <strong>${song.title}</strong><br>
+                    <small>${song.size} | ${song.date}</small>
+                </div>
+                <button onclick="deleteSong(event, ${song.id})" style="background:red; color:white; border:none; padding:5px;">Hapus</button>
+            `;
+            item.onclick = () => playSong(index);
+            list.appendChild(item);
+        });
     };
 }
 
-function renderList(data) {
-    const listDiv = document.getElementById('audioList');
-    listDiv.innerHTML = "";
-    
-    data.forEach((song, index) => {
-        const item = document.createElement('div');
-        item.className = 'audio-item';
-        item.onclick = () => playSong(index);
-        item.innerHTML = `
-            <div class="audio-info">
-                <h4>${song.name}</h4>
-                <span>${song.size} | ${song.date}</span>
-            </div>
-            <button onclick="deleteSong(event, ${song.id})" style="background:none; border:none; color:red;">Hapus</button>
-        `;
-        listDiv.appendChild(item);
-    });
-}
-
-// 5. Player Logic
+// Kontrol Pemutar
 function playSong(index) {
-    if (index < 0 || index >= playlist.length) return;
     currentIndex = index;
-    const song = playlist[index];
+    const song = playlist[currentIndex];
+    currentAudio.src = song.data;
+    currentAudio.play();
     
-    const blob = new Blob([song.data], { type: song.type });
-    const url = URL.createObjectURL(blob);
+    document.getElementById('playerBar').style.display = 'flex';
+    document.getElementById('playerTitle').innerText = song.title;
     
-    currentAudio.src = url;
-    currentAudio.play().catch(() => {
-        alert("Klik layar sekali untuk mengaktifkan suara browser.");
-    });
-
-    document.getElementById('playerBar').style.display = 'block';
-    document.getElementById('playerTitle').innerText = song.name;
-    updateMediaSession(song);
-    
-    currentAudio.ontimeupdate = () => {
-        const slider = document.getElementById('seekSlider');
-        const current = document.getElementById('currentTime');
-        const dur = document.getElementById('durationTime');
-        
-        slider.value = (currentAudio.currentTime / currentAudio.duration) * 100 || 0;
-        current.innerText = formatTime(currentAudio.currentTime);
-        dur.innerText = formatTime(currentAudio.duration);
-    };
-
-    currentAudio.onended = () => nextTrack();
-}
-
-function togglePlay() {
-    const btn = document.getElementById('playPauseBtn');
-    if (currentAudio.paused) {
-        currentAudio.play();
-        btn.innerText = "⏸";
-    } else {
-        currentAudio.pause();
-        btn.innerText = "▶";
+    // Media Session API (Favicon & Kontrol di Panel Browser)
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: song.title,
+            artist: 'PlayMusic - Daus XD',
+            artwork: [{ src: '/Favicon.png', sizes: '96x96', type: 'image/png' }]
+        });
     }
+
+    updatePlayPauseBtn();
 }
 
-function stopAudio() {
+function updatePlayPauseBtn() {
+    const btn = document.getElementById('playPauseBtn');
+    btn.innerText = currentAudio.paused ? "▶" : "⏸";
+}
+
+document.getElementById('playPauseBtn').onclick = () => {
+    if (currentAudio.paused) currentAudio.play();
+    else currentAudio.pause();
+    updatePlayPauseBtn();
+};
+
+document.getElementById('nextBtn').onclick = () => {
+    if (currentIndex < playlist.length - 1) playSong(currentIndex + 1);
+};
+
+document.getElementById('prevBtn').onclick = () => {
+    if (currentIndex > 0) playSong(currentIndex - 1);
+};
+
+document.getElementById('stopBtn').onclick = () => {
     currentAudio.pause();
     currentAudio.currentTime = 0;
     document.getElementById('playerBar').style.display = 'none';
-}
+};
 
-function nextTrack() { playSong(currentIndex + 1); }
-function prevTrack() { playSong(currentIndex - 1); }
+// Durasi Real-time
+currentAudio.ontimeupdate = () => {
+    const cur = formatTime(currentAudio.currentTime);
+    const dur = formatTime(currentAudio.duration || 0);
+    document.getElementById('playerDuration').innerText = `${cur} / ${dur}`;
+};
 
-// 6. Media Session (Browser Control Panel)
-function updateMediaSession(song) {
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: song.name,
-            artist: "PlayMusic - Daus XD",
-            artwork: [{ src: 'favicon.png', sizes: '512x512', type: 'image/png' }]
-        });
-        
-        navigator.mediaSession.setActionHandler('play', () => togglePlay());
-        navigator.mediaSession.setActionHandler('pause', () => togglePlay());
-        navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
-        navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
-    }
-}
-
-// 7. Helper & UI
 function formatTime(sec) {
-    if (isNaN(sec)) return "0:00";
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
+    return `${m}:${s < 10 ? '0' + s : s}`;
 }
 
-function togglePopup(show) {
-    document.getElementById('uploadPopup').style.display = show ? 'flex' : 'none';
-    if(!show) {
-        document.getElementById('progressContainer').style.display = 'none';
-        document.getElementById('fileInput').value = "";
-    }
-}
-
-function deleteSong(event, id) {
-    event.stopPropagation();
+// Hapus Audio
+window.deleteSong = (e, id) => {
+    e.stopPropagation();
     if (confirm("Hapus audio ini secara permanen?")) {
         const transaction = db.transaction(["songs"], "readwrite");
         transaction.objectStore("songs").delete(id);
-        transaction.oncomplete = () => loadSongs();
+        transaction.oncomplete = () => renderList();
     }
-}
-
-// Search & Filter
-document.getElementById('searchInput').oninput = (e) => {
-    const val = e.target.value.toLowerCase();
-    const filtered = playlist.filter(s => s.name.toLowerCase().includes(val));
-    renderList(filtered);
 };
 
-document.getElementById('filterSelect').onchange = (e) => {
-    let sorted = [...playlist];
-    if (e.target.value === 'terlama') sorted.reverse();
-    if (e.target.value === 'az') sorted.sort((a,b) => a.name.localeCompare(b.name));
-    renderList(sorted);
-};
+// Event Pencarian & Filter
+document.getElementById('searchInput').oninput = renderList;
+document.getElementById('filterSelect').onchange = renderList;
