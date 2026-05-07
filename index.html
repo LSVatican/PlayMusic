@@ -5,72 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlayMusic - Daus XD</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="shortcut icon" href="/PlayMusic.png" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="/Favicon.png" type="image/x-icon">
 </head>
 <body>
 
-    <div id="permission-overlay">
+    <div id="permission-overlay" class="overlay">
         <div class="glass-card">
             <h2>Izin Audio</h2>
-            <p>Klik tombol di bawah untuk mengaktifkan fitur pemutar audio di browser ini.</p>
-            <button onclick="enableAudio()" class="btn-glow">Aktifkan Suara</button>
+            <p>Aktifkan suara untuk memulai pengalaman musik terbaik.</p>
+            <button id="btn-allow">Aktifkan Suara</button>
         </div>
     </div>
 
     <header>
-        <h1>PlayMusic</h1>
-        <div class="version">v1.0.0</div>
+        <h1 class="glow-text">PlayMusic</h1>
+        <button id="btn-open-upload">Unggah Audio</button>
     </header>
 
     <main id="audio-list">
         </main>
 
+    <div id="upload-popup" class="modal">
+        <div class="modal-content glass-card">
+            <h3>Unggah Musik Baru</h3>
+            <p class="format-info">Format: .mp3, .wav, .ogg</p>
+            <input type="file" id="file-input" accept=".mp3,.wav,.ogg">
+            
+            <div id="progress-container" style="display:none;">
+                <div id="progress-bar"></div>
+                <span id="progress-text">0%</span>
+            </div>
+            
+            <div class="modal-buttons">
+                <button id="btn-close-upload" class="btn-secondary">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="player-bar" class="player-bar" style="display:none;">
+        <div class="player-info">
+            <marquee id="current-title" class="glow-text">Judul Lagu</marquee>
+        </div>
+        <div class="player-controls">
+            <button id="btn-prev">⏮</button>
+            <button id="btn-play-pause">▶</button>
+            <button id="btn-next">⏭</button>
+            <button id="btn-stop" class="btn-close-player">✖</button>
+        </div>
+        <div class="seek-bar-container">
+            <input type="range" id="seek-bar" value="0" max="100">
+        </div>
+    </div>
+
     <div class="watermark">by Daus XD</div>
-
-    <button class="fab" onclick="togglePopup('upload-popup')">+</button>
-
-    <div id="upload-popup" class="popup">
-        <div class="popup-content">
-            <h3>Unggah Audio</h3>
-            <p>Format: .mp3, .wav, .ogg</p>
-            <input type="file" id="audio-input" accept=".mp3,.wav,.ogg">
-            <div class="progress-container" id="progress-container" style="display:none;">
-                <div class="progress-bar" id="progress-bar"></div>
-            </div>
-            <div class="popup-actions">
-                <button onclick="uploadAudio()" class="btn-glow">Unggah</button>
-                <button onclick="togglePopup('upload-popup')" class="btn-outline">Batal</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="privacy-popup" class="popup">
-        <div class="popup-content">
-            <h3>Privacy Policy</h3>
-            <p>Data audio Anda disimpan secara lokal di browser menggunakan IndexedDB. Kami tidak mengumpulkan data pribadi Anda.</p>
-            <button onclick="togglePopup('privacy-popup')" class="btn-glow">Tutup</button>
-        </div>
-    </div>
-
-    <div id="player-bar" class="player-bar hide">
-        <div class="track-info">
-            <marquee id="player-title">Judul Audio</marquee>
-        </div>
-        <div class="controls">
-            <button onclick="prevTrack()"><i class="fas fa-backward"></i></button>
-            <button onclick="togglePlay()" id="play-pause-btn"><i class="fas fa-play"></i></button>
-            <button onclick="nextTrack()"><i class="fas fa-forward"></i></button>
-            <button onclick="stopAudio()"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="seek-container">
-            <div class="seek-bar" id="seek-bar"></div>
-        </div>
-    </div>
-
-    <footer>
-        <span onclick="togglePopup('privacy-popup')">Privacy Policy</span>
-    </footer>
 
     <script src="script.js"></script>
 </body>
