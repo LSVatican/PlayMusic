@@ -113,6 +113,8 @@ function renderList(songs) {
 
 // Control Pemutar
 function playTrack(index) {
+    if (index < 0 || index >= currentPlaylist.length) return; // Keamanan agar tidak error
+    
     currentIndex = index;
     const song = currentPlaylist[index];
     const url = URL.createObjectURL(song.blob);
@@ -124,12 +126,33 @@ function playTrack(index) {
     document.getElementById('playerTitle').innerText = song.name;
     updatePlayBtn(true);
     
-    // Media Session (Browser Control)
+    // SETUP MEDIA SESSION (Panel Kontrol Browser)
     if ('mediaSession' in navigator) {
+        // 1. Set Informasi Lagu
         navigator.mediaSession.metadata = new MediaMetadata({
             title: song.name,
             artist: 'PlayMusic - Daus XD',
-            artwork: [{ src: '/Favicon.png', sizes: '512x512', type: 'image/png' }]
+            album: 'Koleksi Saya',
+            artwork: [
+                { src: 'favicon.png', sizes: '96x96', type: 'image/png' },
+                { src: 'favicon.png', sizes: '512x512', type: 'image/png' }
+            ]
+        });
+
+        // 2. Hubungkan Tombol Panel Browser ke Fungsi Kita
+        navigator.mediaSession.setActionHandler('play', () => {
+            audioObj.play();
+            updatePlayBtn(true);
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+            audioObj.pause();
+            updatePlayBtn(false);
+        });
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+            prevTrack();
+        });
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+            nextTrack();
         });
     }
 }
@@ -189,3 +212,14 @@ function formatTime(sec) {
     const s = Math.floor(sec % 60);
     return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
+
+// Fitur otomatis putar lagu selanjutnya jika lagu habis
+audioObj.onended = () => {
+    // Cek apakah masih ada lagu selanjutnya
+    if (currentIndex < currentPlaylist.length - 1) {
+        nextTrack();
+    } else {
+        // Jika sudah lagu terakhir, kembali ke lagu pertama (opsional)
+        playTrack(0); 
+    }
+};
