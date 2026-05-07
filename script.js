@@ -102,35 +102,6 @@ function renderList(songs) {
     });
 }
 
-// Kontrol Pemutar
-function playSong(index) {
-    currentIndex = index;
-    const song = playlist[index];
-    audio.src = song.data;
-    document.getElementById('currentTitle').innerText = song.title;
-    document.getElementById('playerBar').style.display = 'block';
-    audio.play();
-    updateMediaSession(song.title);
-}
-
-document.getElementById('playPauseBtn').onclick = () => {
-    if (audio.paused) audio.play();
-    else audio.pause();
-};
-
-document.getElementById('nextBtn').onclick = () => {
-    if (currentIndex < playlist.length - 1) playSong(currentIndex + 1);
-};
-
-document.getElementById('prevBtn').onclick = () => {
-    if (currentIndex > 0) playSong(currentIndex - 1);
-};
-
-document.getElementById('stopBtn').onclick = () => {
-    audio.pause();
-    document.getElementById('playerBar').style.display = 'none';
-};
-
 // Update Progress Bar Slider
 audio.ontimeupdate = () => {
     const slider = document.getElementById('seekSlider');
@@ -179,3 +150,73 @@ document.getElementById('searchInput').oninput = (e) => {
     const filtered = playlist.filter(s => s.title.toLowerCase().includes(val));
     renderList(filtered);
 };
+
+// ... (kode inisialisasi DB dan loadSongs tetap sama) ...
+
+const playIcon = document.getElementById('playIcon');
+
+// Fungsi utama untuk memutar lagu
+function playSong(index) {
+    if (index < 0 || index >= playlist.length) return; // Validasi index
+    
+    currentIndex = index;
+    const song = playlist[index];
+    audio.src = song.data;
+    document.getElementById('currentTitle').innerText = song.title;
+    document.getElementById('playerBar').style.display = 'block';
+    
+    audio.play();
+    updateMediaSession(song.title);
+}
+
+// Fitur Otomatis Next saat audio habis (Auto-Next)
+audio.onended = () => {
+    console.log("Lagu selesai, memutar lagu berikutnya...");
+    if (currentIndex < playlist.length - 1) {
+        playSong(currentIndex + 1); // Putar lagu berikutnya
+    } else {
+        playSong(0); // Kembali ke lagu pertama jika sudah di akhir list
+    }
+};
+
+// Perubahan tampilan tombol Play/Pause secara otomatis
+audio.onplay = () => {
+    playIcon.innerText = "Pause";
+    // Opsional: Tambahkan efek glow lebih kuat saat main
+    document.getElementById('playPauseBtn').style.boxShadow = "0 0 20px var(--pink-glow)";
+};
+
+audio.onpause = () => {
+    playIcon.innerText = "Play";
+    document.getElementById('playPauseBtn').style.boxShadow = "none";
+};
+
+// Logika Klik Tombol Play/Pause
+document.getElementById('playPauseBtn').onclick = () => {
+    if (audio.src) {
+        if (audio.paused) {
+            audio.play();
+        } else {
+            audio.pause();
+        }
+    }
+};
+
+// Tombol Next & Prev Manual
+document.getElementById('nextBtn').onclick = () => {
+    if (currentIndex < playlist.length - 1) {
+        playSong(currentIndex + 1);
+    } else {
+        playSong(0); // Loop ke awal
+    }
+};
+
+document.getElementById('prevBtn').onclick = () => {
+    if (currentIndex > 0) {
+        playSong(currentIndex - 1);
+    } else {
+        playSong(playlist.length - 1); // Loop ke akhir
+    }
+};
+
+// ... (sisa kode progress bar dan delete tetap sama) ...
