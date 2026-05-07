@@ -4,57 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlayMusic - Daus XD</title>
+    <link rel="icon" href="/Favicon.png" type="image/png">
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="/Favicon.png" type="image/x-icon">
 </head>
 <body>
 
-    <div id="permission-overlay" class="overlay">
-        <div class="glass-card">
-            <h2>Izin Audio</h2>
-            <p>Aktifkan suara untuk memulai pengalaman musik terbaik.</p>
-            <button id="btn-allow">Aktifkan Suara</button>
-        </div>
-    </div>
-
     <header>
-        <h1 class="glow-text">PlayMusic</h1>
-        <button id="btn-open-upload">Unggah Audio</button>
+        <h1>PlayMusic</h1>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Cari judul lagu...">
+        </div>
+        <div class="filters">
+            <select id="filterSelect">
+                <option value="terbaru">Terbaru</option>
+                <option value="terlama">Terlama</option>
+                <option value="nama">Nama (A-Z)</option>
+            </select>
+            <button id="openUploadBtn" class="btn-glow">Unggah Audio</button>
+        </div>
     </header>
 
-    <main id="audio-list">
+    <main id="audioList">
         </main>
 
-    <div id="upload-popup" class="modal">
-        <div class="modal-content glass-card">
-            <h3>Unggah Musik Baru</h3>
-            <p class="format-info">Format: .mp3, .wav, .ogg</p>
-            <input type="file" id="file-input" accept=".mp3,.wav,.ogg">
-            
-            <div id="progress-container" style="display:none;">
-                <div id="progress-bar"></div>
-                <span id="progress-text">0%</span>
-            </div>
-            
-            <div class="modal-buttons">
-                <button id="btn-close-upload" class="btn-secondary">Batal</button>
+    <div id="permissionModal" class="modal">
+        <div class="modal-content">
+            <h2>Izin Audio</h2>
+            <p>Izinkan browser untuk memutar suara secara otomatis?</p>
+            <button id="allowAudioBtn" class="btn-glow">Aktifkan Suara</button>
+        </div>
+    </div>
+
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Unggah Lagu</h2>
+            <p>Format: .mp3, .wav, .ogg</p>
+            <input type="file" id="audioFile" accept=".mp3,.wav,.ogg">
+            <div class="progress-container" id="progressContainer" style="display:none;">
+                <div class="progress-bar" id="progressBar">0%</div>
             </div>
         </div>
     </div>
 
-    <div id="player-bar" class="player-bar" style="display:none;">
-        <div class="player-info">
-            <marquee id="current-title" class="glow-text">Judul Lagu</marquee>
+    <div id="playerBar" class="player-bar" style="display:none;">
+        <div class="song-info">
+            <marquee id="currentTitle">Judul Lagu</marquee>
         </div>
-        <div class="player-controls">
-            <button id="btn-prev">⏮</button>
-            <button id="btn-play-pause">▶</button>
-            <button id="btn-next">⏭</button>
-            <button id="btn-stop" class="btn-close-player">✖</button>
+        <div class="controls">
+            <button id="prevBtn">⏮</button>
+            <button id="playPauseBtn">▶</button>
+            <button id="nextBtn">⏭</button>
+            <button id="closePlayer">✖</button>
         </div>
-        <div class="seek-bar-container">
-            <input type="range" id="seek-bar" value="0" max="100">
-        </div>
+        <input type="range" id="seekSlider" value="0" max="100">
     </div>
 
     <div class="watermark">by Daus XD</div>
