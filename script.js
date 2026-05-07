@@ -114,6 +114,7 @@ function playSong(index) {
         navigator.mediaSession.metadata = new MediaMetadata({
             title: song.title,
             artist: 'Daus XD',
+            album: 'PlayMusic',
             artwork: [{ src: '/Favicon.png', sizes: '512x512', type: 'image/png' }]
         });
     }
