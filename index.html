@@ -6,50 +6,61 @@
     <title>PlayMusic - Daus XD</title>
     <link rel="icon" href="/Favicon.png" type="image/png">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
     <header>
         <h1>PlayMusic</h1>
-        <div class="watermark">Daus XD</div>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Cari judul lagu...">
+            <select id="filterSelect">
+                <option value="terbaru">Terbaru</option>
+                <option value="terlama">Terlama</option>
+                <option value="judul">A-Z</option>
+            </select>
+        </div>
     </header>
-
-    <div class="controls-container">
-        <input type="text" id="searchBar" placeholder="Cari judul audio...">
-        <select id="filterSelect">
-            <option value="terbaru">Terbaru</option>
-            <option value="terlama">Terlama</option>
-        </select>
-        <button id="openUploadBtn">Unggah Audio</button>
-    </div>
 
     <main id="audioList">
         </main>
 
+    <button id="openUploadBtn" class="fab"><i class="fas fa-plus"></i></button>
+
     <div id="uploadModal" class="modal">
         <div class="modal-content">
-            <h3>Unggah Audio</h3>
-            <p>Format: .mp3, .wav, .m4a</p>
-            <input type="file" id="audioInput" accept=".mp3,.wav,.m4a">
+            <h3>Unggah Audio (MP3, WAV, OGG)</h3>
+            <input type="file" id="fileInput" accept=".mp3, .wav, .ogg">
             <div class="progress-container" id="progressContainer" style="display:none;">
                 <div class="progress-bar" id="progressBar">0%</div>
             </div>
-            <button class="close-modal" id="closeUploadBtn">Batal</button>
+            <p id="uploadStatus"></p>
+            <button onclick="closeModal()">Batal</button>
         </div>
     </div>
 
     <div id="playerBar" class="player-bar" style="display:none;">
         <div class="track-info">
-            <div class="scrolling-text">
-                <span id="playerTitle">Judul Lagu Sedang Diputar</span>
+            <div class="marquee">
+                <span id="playerTitle">Judul Lagu Sedang Diputar...</span>
             </div>
             <small id="playerTime">00:00 / 00:00</small>
         </div>
-        <div class="player-controls">
-            <button id="prevBtn">⏮</button>
-            <button id="playPauseBtn">▶</button>
-            <button id="nextBtn">⏭</button>
-            <button id="stopBtn">✖</button>
+        <div class="controls">
+            <button onclick="prevTrack()"><i class="fas fa-step-backward"></i></button>
+            <button onclick="togglePlay()" id="playPauseBtn"><i class="fas fa-play"></i></button>
+            <button onclick="nextTrack()"><i class="fas fa-step-forward"></i></button>
+            <button onclick="stopAudio()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="watermark">Daus XD</div>
+    </div>
+
+    <div id="permissionOverlay" class="permission-overlay">
+        <div class="permission-card">
+            <i class="fas fa-volume-up"></i>
+            <h2>Izin Audio</h2>
+            <p>Klik tombol di bawah untuk mengaktifkan suara di browser.</p>
+            <button id="enableAudioBtn">Aktifkan Suara</button>
         </div>
     </div>
 
