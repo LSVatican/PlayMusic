@@ -1,119 +1,82 @@
 :root {
-    --pink-main: #ff69b4;
-    --pink-dark: #c71585;
-    --pink-glow: #ffb6c1;
-    --bg-dark: #1a0a12;
-    --text-white: #ffffff;
+    --pink-main: #ffb6c1;
+    --pink-dark: #ff69b4;
+    --pink-glow: #ff1493;
+    --white: #ffffff;
 }
 
 body {
-    background-color: var(--bg-dark);
-    color: var(--text-white);
+    background-color: #fff0f5;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
+    color: #333;
     padding-bottom: 100px;
 }
 
-.watermark {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    font-size: 12px;
-    opacity: 0.5;
-    z-index: 1000;
-}
-
 header {
-    text-align: center;
-    padding: 20px;
-    border-bottom: 2px solid var(--pink-main);
-    box-shadow: 0 0 15px var(--pink-main);
-}
-
-h1 {
-    color: var(--pink-main);
-    text-shadow: 0 0 10px var(--pink-main), 2px 2px #000;
-    -webkit-text-stroke: 1px var(--text-white);
-}
-
-.search-filter-container {
-    margin: 15px 0;
-}
-
-input, select {
-    background: #2d1320;
-    border: 1px solid var(--pink-main);
-    color: white;
-    padding: 8px;
-    border-radius: 5px;
-    box-shadow: 0 0 5px var(--pink-main);
-}
-
-.glow-btn {
     background: var(--pink-main);
-    border: 2px solid white;
-    color: white;
-    padding: 10px 20px;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 4px solid var(--pink-dark);
+    box-shadow: 0 0 15px var(--pink-glow);
+}
+
+.watermark {
+    font-size: 12px;
+    color: var(--pink-dark);
     font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 0 10px var(--pink-main);
-    transition: 0.3s;
 }
 
-.glow-btn:hover {
-    box-shadow: 0 0 20px var(--pink-glow);
-    transform: scale(1.05);
-}
-
-/* List Audio */
-.audio-item {
-    background: #2d1320;
-    margin: 10px;
+/* Controls */
+.controls-container {
     padding: 15px;
-    border-radius: 8px;
-    border-left: 5px solid var(--pink-main);
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-    cursor: pointer;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
-.audio-item:hover {
+input, select, button {
+    padding: 10px;
+    border: 2px solid var(--pink-dark);
+    border-radius: 8px;
+    outline: none;
+}
+
+button {
+    background: var(--pink-main);
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+button:hover {
+    background: var(--pink-dark);
+    color: white;
     box-shadow: 0 0 10px var(--pink-glow);
 }
 
-/* Pop-up */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 2000;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8);
-}
-
-.modal-content {
-    background: #3d1a2b;
-    margin: 20% auto;
+/* Audio List */
+#audioList {
     padding: 20px;
-    width: 80%;
+    display: grid;
+    gap: 10px;
+}
+
+.audio-item {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
     border: 2px solid var(--pink-main);
-    box-shadow: 0 0 20px var(--pink-main);
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: 0.3s;
 }
 
-.progress-container {
-    width: 100%;
-    background: #000;
-    margin: 10px 0;
-}
-
-.progress-bar {
-    height: 20px;
-    background: var(--pink-main);
-    width: 0%;
-    text-align: center;
-    color: white;
+.audio-item:hover {
+    border-color: var(--pink-glow);
+    transform: scale(1.01);
 }
 
 /* Player Bar */
@@ -121,41 +84,68 @@ input, select {
     position: fixed;
     bottom: 0;
     width: 100%;
-    background: #2d1320;
-    border-top: 2px solid var(--pink-main);
+    background: var(--pink-main);
+    border-top: 3px solid var(--pink-dark);
     padding: 15px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     align-items: center;
-    box-shadow: 0 -5px 15px var(--pink-main);
+    box-shadow: 0 -5px 15px rgba(255, 20, 147, 0.3);
 }
 
-.marquee-container {
+.scrolling-text {
     width: 200px;
     overflow: hidden;
     white-space: nowrap;
+    position: relative;
+    border-bottom: 1px solid var(--pink-dark);
 }
 
-.marquee-text {
+.scrolling-text span {
     display: inline-block;
     padding-left: 100%;
-    animation: marquee 10s linear infinite;
-    font-weight: bold;
-    color: var(--pink-main);
+    animation: scrollText 10s linear infinite;
 }
 
-@keyframes marquee {
-    0% { transform: translate(0, 0); }
-    100% { transform: translate(-100%, 0); }
+@keyframes scrollText {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
 }
 
-.player-controls button {
-    background: none;
-    border: 1px solid var(--pink-main);
-    color: var(--pink-main);
-    font-size: 20px;
-    margin: 0 10px;
-    padding: 5px 15px;
-    border-radius: 50%;
-    cursor: pointer;
+/* Progress Bar */
+.progress-container {
+    width: 100%;
+    background: #eee;
+    margin-top: 10px;
+    border-radius: 5px;
+}
+
+.progress-bar {
+    width: 0%;
+    height: 20px;
+    background: var(--pink-glow);
+    text-align: center;
+    color: white;
+    line-height: 20px;
+    font-size: 12px;
+    border-radius: 5px;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    border: 5px solid var(--pink-main);
+    text-align: center;
 }

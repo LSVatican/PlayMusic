@@ -4,47 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlayMusic - Daus XD</title>
-    <link rel="stylesheet" href="style.css">
     <link rel="icon" href="/Favicon.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="watermark">Daus XD</div>
-
     <header>
         <h1>PlayMusic</h1>
-        <div class="search-filter-container">
-            <input type="text" id="searchInput" placeholder="Cari judul audio...">
-            <select id="filterSelect">
-                <option value="terbaru">Terbaru</option>
-                <option value="terlama">Terlama</option>
-                <option value="terakhir">Terakhir Diputar</option>
-            </select>
-        </div>
-        <button id="openUploadBtn" class="glow-btn">Unggah Audio</button>
+        <div class="watermark">Daus XD</div>
     </header>
+
+    <div class="controls-container">
+        <input type="text" id="searchBar" placeholder="Cari judul audio...">
+        <select id="filterSelect">
+            <option value="terbaru">Terbaru</option>
+            <option value="terlama">Terlama</option>
+        </select>
+        <button id="openUploadBtn">Unggah Audio</button>
+    </div>
 
     <main id="audioList">
         </main>
 
     <div id="uploadModal" class="modal">
         <div class="modal-content">
-            <h3>Unggah Audio Baru</h3>
-            <p>Format: .mp3, .wav, .ogg</p>
-            <input type="file" id="audioInput" accept=".mp3,.wav,.ogg">
+            <h3>Unggah Audio</h3>
+            <p>Format: .mp3, .wav, .m4a</p>
+            <input type="file" id="audioInput" accept=".mp3,.wav,.m4a">
             <div class="progress-container" id="progressContainer" style="display:none;">
                 <div class="progress-bar" id="progressBar">0%</div>
             </div>
-            <button id="closeModalBtn">Batal</button>
+            <button class="close-modal" id="closeUploadBtn">Batal</button>
         </div>
     </div>
 
     <div id="playerBar" class="player-bar" style="display:none;">
         <div class="track-info">
-            <div class="marquee-container">
-                <span id="playerTitle" class="marquee-text">Judul Lagu Sedang Diputar...</span>
+            <div class="scrolling-text">
+                <span id="playerTitle">Judul Lagu Sedang Diputar</span>
             </div>
-            <small id="playerDuration">00:00 / 00:00</small>
+            <small id="playerTime">00:00 / 00:00</small>
         </div>
         <div class="player-controls">
             <button id="prevBtn">⏮</button>
