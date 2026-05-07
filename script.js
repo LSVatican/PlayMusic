@@ -178,3 +178,75 @@ window.onclick = (event) => {
         modal.style.display = 'none';
     }
 };
+
+// Variabel global untuk menyimpan data asli agar pencarian lebih cepat
+let allSongs = []; 
+
+// 1. Fungsi Pencarian dan Filter Gabungan
+function filterAndSearch() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const filterValue = document.getElementById('filterSelect').value;
+    const lastPlayedId = localStorage.getItem('lastPlayedId');
+
+    // Salin data asli agar tidak merusak urutan database
+    let filteredSongs = [...allSongs];
+
+    // Logika Pencarian
+    filteredSongs = filteredSongs.filter(song => 
+        song.title.toLowerCase().includes(searchTerm)
+    );
+
+    // Logika Filter
+    if (filterValue === "terbaru") {
+        filteredSongs.sort((a, b) => b.id - a.id); // ID besar = baru diunggah
+    } else if (filterValue === "terlama") {
+        filteredSongs.sort((a, b) => a.id - b.id);
+    } else if (filterValue === "terakhir") {
+        // Pindahkan lagu yang terakhir diputar ke posisi paling atas
+        if (lastPlayedId) {
+            filteredSongs.sort((a, b) => {
+                if (a.id == lastPlayedId) return -1;
+                if (b.id == lastPlayedId) return 1;
+                return 0;
+            });
+        }
+    }
+
+    // Tampilkan hasil filter ke layar
+    renderList(filteredSongs);
+}
+
+// 2. Event Listeners untuk Input dan Select
+document.getElementById('searchInput').addEventListener('input', filterAndSearch);
+document.getElementById('filterSelect').addEventListener('change', filterAndSearch);
+
+// 3. Update Fungsi loadSongs agar menyimpan data ke variabel allSongs
+function loadSongs() {
+    const transaction = db.transaction(["songs"], "readonly");
+    const store = transaction.objectStore("songs");
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+        allSongs = request.result; // Simpan ke variabel global
+        filterAndSearch(); // Jalankan filter awal (default: terbaru)
+    };
+}
+
+// 4. Update Fungsi playSong untuk menyimpan ID "Terakhir Diputar"
+function playSong(index) {
+    if(index < 0 || index >= playlist.length) return;
+    
+    currentIndex = index;
+    const song = playlist[index];
+    
+    // Simpan ID lagu ke localStorage untuk fitur filter "Terakhir"
+    localStorage.setItem('lastPlayedId', song.id);
+
+    const blob = new Blob([song.data], { type: 'audio/mpeg' });
+    currentAudio.src = URL.createObjectURL(blob);
+    currentAudio.play();
+
+    document.getElementById('playerBar').classList.remove('hidden');
+    document.getElementById('currentTitle').innerText = song.title;
+    document.getElementById('playPauseBtn').innerText = '⏸';
+}
