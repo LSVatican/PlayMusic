@@ -1,10 +1,9 @@
 let db;
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let currentAudio = new Audio();
-let playlist = [];
+let audioList = [];
 let currentIndex = -1;
 
-// 1. Inisialisasi IndexedDB (Agar file tidak hilang saat refresh)
+// Inisialisasi IndexedDB
 const request = indexedDB.open("PlayMusicDB", 1);
 request.onupgradeneeded = (e) => {
     db = e.target.result;
@@ -13,116 +12,146 @@ request.onupgradeneeded = (e) => {
 request.onsuccess = (e) => {
     db = e.target.result;
     loadSongs();
+    checkAudioPermission();
 };
 
-// 2. Perizinan Audio Browser
-const overlay = document.getElementById('permissionOverlay');
-document.getElementById('enableAudioBtn').onclick = () => {
-    audioContext.resume().then(() => {
-        overlay.style.display = 'none';
-        localStorage.setItem('audioPermit', 'true');
-    });
+// Cek Izin Suara
+function checkAudioPermission() {
+    if (localStorage.getItem('audioAllowed') === 'true') {
+        document.getElementById('permissionModal').style.display = 'none';
+    } else {
+        document.getElementById('permissionModal').style.display = 'block';
+    }
+}
+
+document.getElementById('grantPermissionBtn').onclick = () => {
+    localStorage.setItem('audioAllowed', 'true');
+    document.getElementById('permissionModal').style.display = 'none';
+    // Dummy play to unlock audio context
+    currentAudio.play().catch(() => {});
 };
 
-if(localStorage.getItem('audioPermit') === 'true') overlay.style.display = 'none';
+// Format Ukuran File
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
 
-// 3. Unggah Audio & Progress Bar
-document.getElementById('openUploadBtn').onclick = () => {
-    document.getElementById('uploadModal').style.display = 'flex';
-};
-
-document.getElementById('fileInput').onchange = (e) => {
+// Unggah Audio
+document.getElementById('audioInput').onchange = (e) => {
     const file = e.target.files[0];
-    if(!file) return;
+    if (!file) return;
 
-    const reader = new FileReader();
-    const progress = document.getElementById('progressBar');
-    document.getElementById('progressContainer').style.display = 'block';
+    const modal = document.getElementById('uploadModal');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const progressContainer = document.getElementById('progressContainer');
 
-    reader.onprogress = (event) => {
-        if (event.lengthComputable) {
-            const percent = Math.round((event.loaded / event.total) * 100);
-            progress.style.width = percent + '%';
-            progress.innerText = percent + '%';
+    progressContainer.style.display = 'block';
+    
+    // Simulasi Progress Bar (Karena IndexedDB cepat, kita buat animasi)
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += 10;
+        progressBar.style.width = progress + '%';
+        progressText.innerText = progress + '%';
+
+        if (progress >= 100) {
+            clearInterval(interval);
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const songData = {
+                    title: file.name,
+                    size: formatBytes(file.size),
+                    data: event.target.result,
+                    type: file.type,
+                    date: new Date().toLocaleString()
+                };
+                
+                const transaction = db.transaction(["songs"], "readwrite");
+                transaction.objectStore("songs").add(songData);
+                transaction.oncomplete = () => {
+                    modal.style.display = 'none';
+                    progressContainer.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    loadSongs();
+                };
+            };
+            reader.readAsDataURL(file);
         }
-    };
-
-    reader.onload = (event) => {
-        const songData = {
-            title: file.name,
-            data: event.target.result,
-            size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-            date: new Date().toLocaleString()
-        };
-        
-        const transaction = db.transaction(["songs"], "readwrite");
-        transaction.objectStore("songs").add(songData);
-        transaction.oncomplete = () => {
-            document.getElementById('uploadModal').style.display = 'none';
-            document.getElementById('progressContainer').style.display = 'none';
-            loadSongs();
-        };
-    };
-    reader.readAsArrayBuffer(file);
+    }, 100);
 };
 
-// 4. Load & Tampilkan List
+// Render Lagu
 function loadSongs() {
     const transaction = db.transaction(["songs"], "readonly");
     const store = transaction.objectStore("songs");
     const request = store.getAll();
 
     request.onsuccess = () => {
-        playlist = request.result;
-        renderList(playlist);
+        audioList = request.result;
+        renderList(audioList);
     };
 }
 
-function renderList(songs) {
-    const list = document.getElementById('audioList');
-    list.innerHTML = "";
-    songs.forEach((song, index) => {
+function renderList(list) {
+    const container = document.getElementById('audioList');
+    container.innerHTML = '';
+    
+    list.forEach((song, index) => {
         const item = document.createElement('div');
         item.className = 'audio-item';
         item.innerHTML = `
             <div class="audio-info" onclick="playSong(${index})">
                 <h4>${song.title}</h4>
-                <span>${song.size} | ${song.date}</span>
+                <small>${song.size} | ${song.date}</small>
             </div>
-            <button onclick="deleteSong(${song.id})" style="background:none; border:none; color:red;">🗑</button>
+            <button onclick="deleteSong(${song.id})" style="background:none; border:none; color:red; cursor:pointer;">Hapus</button>
         `;
-        list.appendChild(item);
+        container.appendChild(item);
     });
 }
 
-// 5. Kontrol Pemutar
+// Kontrol Pemutar
 function playSong(index) {
-    if(index < 0 || index >= playlist.length) return;
     currentIndex = index;
-    const song = playlist[index];
-    
-    const blob = new Blob([song.data], { type: 'audio/mpeg' });
-    currentAudio.src = URL.createObjectURL(blob);
+    const song = audioList[currentIndex];
+    currentAudio.src = song.data;
     currentAudio.play();
-
-    document.getElementById('playerBar').classList.remove('hidden');
+    
+    document.getElementById('playerBar').style.display = 'flex';
     document.getElementById('currentTitle').innerText = song.title;
     document.getElementById('playPauseBtn').innerText = '⏸';
 
-    // Media Session (Favicon di kontrol browser)
+    // Media Session API (Untuk Favicon di Control Center Browser)
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
             title: song.title,
-            artist: 'Daus XD',
-            album: 'PlayMusic',
+            artist: 'PlayMusic - Daus XD',
             artwork: [{ src: '/Favicon.png', sizes: '512x512', type: 'image/png' }]
         });
     }
 }
 
-// Event Listeners
+// Update Waktu Real-time
+currentAudio.ontimeupdate = () => {
+    const cur = formatTime(currentAudio.currentTime);
+    const dur = formatTime(currentAudio.duration || 0);
+    document.getElementById('currentTimeDisplay').innerText = `${cur} / ${dur}`;
+};
+
+function formatTime(secs) {
+    const mins = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${mins}:${s < 10 ? '0' : ''}${s}`;
+}
+
+// Tombol Play/Pause
 document.getElementById('playPauseBtn').onclick = () => {
-    if(currentAudio.paused) {
+    if (currentAudio.paused) {
         currentAudio.play();
         document.getElementById('playPauseBtn').innerText = '⏸';
     } else {
@@ -131,123 +160,29 @@ document.getElementById('playPauseBtn').onclick = () => {
     }
 };
 
-currentAudio.ontimeupdate = () => {
-    const seek = document.getElementById('seekBar');
-    const timeDisplay = document.getElementById('currentTime');
-    const current = formatTime(currentAudio.currentTime);
-    const duration = formatTime(currentAudio.duration || 0);
-    timeDisplay.innerText = `${current} / ${duration}`;
-    seek.value = (currentAudio.currentTime / currentAudio.duration) * 100 || 0;
+// Stop/Close
+document.getElementById('stopBtn').onclick = () => {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    document.getElementById('playerBar').style.display = 'none';
 };
 
-function formatTime(sec) {
-    let m = Math.floor(sec / 60);
-    let s = Math.floor(sec % 60);
-    return `${m}:${s < 10 ? '0'+s : s}`;
-}
-
+// Hapus Lagu
 function deleteSong(id) {
-    if(confirm("Hapus audio ini secara permanen?")) {
+    if (confirm("Hapus audio ini secara permanen?")) {
         const transaction = db.transaction(["songs"], "readwrite");
         transaction.objectStore("songs").delete(id);
         transaction.oncomplete = () => loadSongs();
     }
 }
 
-document.getElementById('closePlayerBtn').onclick = () => {
-    currentAudio.pause();
-    document.getElementById('playerBar').classList.add('hidden');
+// Search & Filter (Sederhana)
+document.getElementById('searchInput').oninput = (e) => {
+    const val = e.target.value.toLowerCase();
+    const filtered = audioList.filter(s => s.title.toLowerCase().includes(val));
+    renderList(filtered);
 };
 
-document.getElementById('nextBtn').onclick = () => playSong(currentIndex + 1);
-document.getElementById('prevBtn').onclick = () => playSong(currentIndex - 1);
-
-// 1. Fungsi klik tombol close
-document.getElementById('closeUploadBtn').onclick = () => {
-    const modal = document.getElementById('uploadModal');
-    modal.style.display = 'none';
-    
-    // Opsional: Reset input file jika batal
-    document.getElementById('fileInput').value = ""; 
-    document.getElementById('progressContainer').style.display = 'none';
-};
-
-// 2. Fitur tambahan: Klik di luar kotak modal untuk menutup
-window.onclick = (event) => {
-    const modal = document.getElementById('uploadModal');
-    if (event.target == modal) {
-        modal.style.display = 'none';
-    }
-};
-
-// Variabel global untuk menyimpan data asli agar pencarian lebih cepat
-let allSongs = []; 
-
-// 1. Fungsi Pencarian dan Filter Gabungan
-function filterAndSearch() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const filterValue = document.getElementById('filterSelect').value;
-    const lastPlayedId = localStorage.getItem('lastPlayedId');
-
-    // Salin data asli agar tidak merusak urutan database
-    let filteredSongs = [...allSongs];
-
-    // Logika Pencarian
-    filteredSongs = filteredSongs.filter(song => 
-        song.title.toLowerCase().includes(searchTerm)
-    );
-
-    // Logika Filter
-    if (filterValue === "terbaru") {
-        filteredSongs.sort((a, b) => b.id - a.id); // ID besar = baru diunggah
-    } else if (filterValue === "terlama") {
-        filteredSongs.sort((a, b) => a.id - b.id);
-    } else if (filterValue === "terakhir") {
-        // Pindahkan lagu yang terakhir diputar ke posisi paling atas
-        if (lastPlayedId) {
-            filteredSongs.sort((a, b) => {
-                if (a.id == lastPlayedId) return -1;
-                if (b.id == lastPlayedId) return 1;
-                return 0;
-            });
-        }
-    }
-
-    // Tampilkan hasil filter ke layar
-    renderList(filteredSongs);
-}
-
-// 2. Event Listeners untuk Input dan Select
-document.getElementById('searchInput').addEventListener('input', filterAndSearch);
-document.getElementById('filterSelect').addEventListener('change', filterAndSearch);
-
-// 3. Update Fungsi loadSongs agar menyimpan data ke variabel allSongs
-function loadSongs() {
-    const transaction = db.transaction(["songs"], "readonly");
-    const store = transaction.objectStore("songs");
-    const request = store.getAll();
-
-    request.onsuccess = () => {
-        allSongs = request.result; // Simpan ke variabel global
-        filterAndSearch(); // Jalankan filter awal (default: terbaru)
-    };
-}
-
-// 4. Update Fungsi playSong untuk menyimpan ID "Terakhir Diputar"
-function playSong(index) {
-    if(index < 0 || index >= playlist.length) return;
-    
-    currentIndex = index;
-    const song = playlist[index];
-    
-    // Simpan ID lagu ke localStorage untuk fitur filter "Terakhir"
-    localStorage.setItem('lastPlayedId', song.id);
-
-    const blob = new Blob([song.data], { type: 'audio/mpeg' });
-    currentAudio.src = URL.createObjectURL(blob);
-    currentAudio.play();
-
-    document.getElementById('playerBar').classList.remove('hidden');
-    document.getElementById('currentTitle').innerText = song.title;
-    document.getElementById('playPauseBtn').innerText = '⏸';
-}
+// Modal Logic
+document.getElementById('openUploadBtn').onclick = () => document.getElementById('uploadModal').style.display = 'block';
+document.querySelector('.close-modal').onclick = () => document.getElementById('uploadModal').style.display = 'none';
