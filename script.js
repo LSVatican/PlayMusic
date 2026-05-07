@@ -160,3 +160,21 @@ document.getElementById('closePlayerBtn').onclick = () => {
 
 document.getElementById('nextBtn').onclick = () => playSong(currentIndex + 1);
 document.getElementById('prevBtn').onclick = () => playSong(currentIndex - 1);
+
+// 1. Fungsi klik tombol close
+document.getElementById('closeUploadBtn').onclick = () => {
+    const modal = document.getElementById('uploadModal');
+    modal.style.display = 'none';
+    
+    // Opsional: Reset input file jika batal
+    document.getElementById('fileInput').value = ""; 
+    document.getElementById('progressContainer').style.display = 'none';
+};
+
+// 2. Fitur tambahan: Klik di luar kotak modal untuk menutup
+window.onclick = (event) => {
+    const modal = document.getElementById('uploadModal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+};
