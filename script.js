@@ -168,3 +168,36 @@ function searchAudio() {
 function toggleUploadModal(show) {
     document.getElementById("uploadModal").style.display = show ? "flex" : "none";
 }
+
+// --- FITUR PERBAIKAN NEXT & PREV ---
+
+function playNext() {
+    if (audioList.length === 0) return; // Jika list kosong, abaikan
+    
+    currentIndex++;
+    
+    // Jika sudah di akhir list, kembali ke awal (loop)
+    if (currentIndex >= audioList.length) {
+        currentIndex = 0;
+    }
+    
+    playAudio(currentIndex);
+}
+
+function playPrev() {
+    if (audioList.length === 0) return; // Jika list kosong, abaikan
+    
+    currentIndex--;
+    
+    // Jika di awal list, pindah ke audio paling terakhir
+    if (currentIndex < 0) {
+        currentIndex = audioList.length - 1;
+    }
+    
+    playAudio(currentIndex);
+}
+
+// Fitur Tambahan: Otomatis putar lagu selanjutnya jika lagu sekarang selesai
+currentAudio.onended = () => {
+    playNext();
+};
