@@ -4,68 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlayMusic - Daus XD</title>
-    <link rel="icon" href="/Favicon.png" type="image/x-icon">
+    <link rel="icon" href="/Favicon.png" type="image/png">
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
+    <div class="watermark">Daus XD</div>
+
     <header>
         <h1>PlayMusic</h1>
-        <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Cari judul audio...">
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Cari judul lagu...">
             <select id="filterSelect">
                 <option value="terbaru">Terbaru</option>
                 <option value="terlama">Terlama</option>
-                <option value="terakhir">Terakhir Diputar</option>
+                <option value="ukuran">Ukuran Terkecil</option>
             </select>
         </div>
-        <button id="openUploadBtn" class="btn-main"><i class="fas fa-plus"></i> Unggah</button>
+        <button id="openUploadBtn" class="btn-glow">Unggah Audio</button>
     </header>
 
     <main id="audioList">
         </main>
 
-    <div class="watermark">by Daus XD</div>
-
     <div id="permissionModal" class="modal">
         <div class="modal-content">
-            <h2>Izin Akses Audio</h2>
-            <p>Klik tombol di bawah untuk mengaktifkan pemutar audio di browser ini.</p>
-            <button id="grantPermission" class="btn-main">Aktifkan Suara</button>
+            <h3>Izin Akses Suara</h3>
+            <p>Klik tombol di bawah untuk mengaktifkan fitur pemutar audio di browser ini.</p>
+            <button id="grantPermission" class="btn-glow">Aktifkan Suara</button>
         </div>
     </div>
 
     <div id="uploadModal" class="modal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2>Unggah Audio</h2>
-            <p class="format-info">Format: MP3, WAV, OGG</p>
-            <input type="file" id="audioInput" accept=".mp3, .wav, .ogg" hidden>
-            <label for="audioInput" class="drop-zone">Pilih File Audio</label>
-            
-            <div id="progressContainer" style="display:none;">
-                <div class="progress-bar-bg">
-                    <div id="progressBar" class="progress-fill"></div>
-                </div>
-                <p id="progressText">0%</p>
+            <span class="close-btn">&times;</span>
+            <h3>Unggah Audio Baru</h3>
+            <p>Format: .mp3, .wav, .ogg</p>
+            <input type="file" id="audioFileInput" accept=".mp3,.wav,.ogg">
+            <div class="progress-container" id="progressContainer" style="display:none;">
+                <div class="progress-bar" id="progressBar">0%</div>
             </div>
+            <button id="startUploadBtn" class="btn-glow">Mulai Unggah</button>
         </div>
     </div>
 
-    <div id="bottomPlayer" class="player-container">
+    <div id="playerBar" class="player-bar" style="display:none;">
         <div class="player-info">
-            <marquee id="currentTitle">Tidak ada lagu diputar</marquee>
+            <span id="currentTitle">Judul Lagu</span>
+            <span id="currentDuration">00:00 / 00:00</span>
         </div>
         <div class="player-controls">
-            <button id="prevBtn"><i class="fas fa-step-backward"></i></button>
-            <button id="playPauseBtn"><i class="fas fa-play"></i></button>
-            <button id="nextBtn"><i class="fas fa-step-forward"></i></button>
-            <button id="stopBtn"><i class="fas fa-times"></i></button>
+            <button id="prevBtn">⏮</button>
+            <button id="playPauseBtn">▶</button>
+            <button id="nextBtn">⏭</button>
+            <button id="stopBtn">✖</button>
         </div>
-        <div class="time-display">
-            <span id="currentTime">00:00</span> / <span id="duration">00:00</span>
-        </div>
+        <input type="range" id="audioSeeker" value="0" max="100">
     </div>
 
     <script src="script.js"></script>

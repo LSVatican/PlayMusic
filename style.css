@@ -1,120 +1,114 @@
 :root {
     --pink-main: #ff85a2;
-    --pink-glow: #ff4d79;
-    --dark-bg: #1a0a0f;
-    --glass: rgba(255, 133, 162, 0.1);
+    --pink-glow: #ff007f;
+    --bg-dark: #1a0a0f;
+    --text-color: #ffffff;
 }
 
 body {
-    background-color: var(--dark-bg);
-    color: white;
+    background-color: var(--bg-dark);
+    color: var(--text-color);
     font-family: 'Segoe UI', sans-serif;
     margin: 0;
-    padding-bottom: 100px;
-}
-
-header {
     padding: 20px;
-    text-align: center;
-    border-bottom: 2px solid var(--pink-main);
-    box-shadow: 0 0 15px var(--pink-glow);
-}
-
-h1 { color: var(--pink-main); text-shadow: 0 0 10px var(--pink-glow); }
-
-.btn-main {
-    background: var(--pink-main);
-    border: 2px solid white;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 20px;
-    cursor: pointer;
-    box-shadow: 0 0 10px var(--pink-glow);
-    font-weight: bold;
-}
-
-/* Audio List Styling */
-.audio-item {
-    background: var(--glass);
-    margin: 10px;
-    padding: 15px;
-    border: 1px solid var(--pink-main);
-    border-radius: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: 0.3s;
-}
-
-.audio-item:hover {
-    box-shadow: 0 0 15px var(--pink-glow);
-    transform: scale(1.01);
-}
-
-/* Modals */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8);
-    backdrop-filter: blur(5px);
-}
-
-.modal-content {
-    background: var(--dark-bg);
-    margin: 15% auto;
-    padding: 30px;
-    width: 80%;
-    border: 2px solid var(--pink-main);
-    border-radius: 15px;
-    text-align: center;
-    box-shadow: 0 0 30px var(--pink-glow);
-}
-
-/* Progress Bar */
-.progress-bar-bg {
-    background: #333;
-    height: 10px;
-    border-radius: 5px;
-    margin-top: 20px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, var(--pink-main), #fff);
-    box-shadow: 0 0 10px white;
-    transition: width 0.1s;
-}
-
-/* Bottom Player */
-.player-container {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    background: rgba(26, 10, 15, 0.95);
-    border-top: 2px solid var(--pink-main);
-    padding: 15px 0;
-    display: none; /* Muncul saat lagu diputar */
-    text-align: center;
-}
-
-.player-controls button {
-    background: none;
-    border: none;
-    color: var(--pink-main);
-    font-size: 24px;
-    margin: 0 15px;
-    cursor: pointer;
-    filter: drop-shadow(0 0 5px var(--pink-glow));
 }
 
 .watermark {
     position: fixed;
-    bottom: 80px;
-    right: 20px;
+    top: 10px;
+    right: 10px;
     opacity: 0.5;
+    font-size: 0.8rem;
+    z-index: 1000;
+}
+
+h1 {
+    text-align: center;
+    color: var(--pink-main);
+    text-shadow: 0 0 10px var(--pink-glow);
+}
+
+.btn-glow {
+    background: transparent;
+    border: 2px solid var(--pink-main);
+    color: var(--pink-main);
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 0 5px var(--pink-glow);
+    transition: 0.3s;
+}
+
+.btn-glow:hover {
+    background: var(--pink-main);
+    color: white;
+    box-shadow: 0 0 20px var(--pink-glow);
+}
+
+/* Audio List Styling */
+.audio-item {
+    background: rgba(255, 133, 162, 0.1);
+    border: 1px solid var(--pink-main);
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.audio-item:hover {
+    background: rgba(255, 133, 162, 0.2);
+}
+
+/* Player Bar */
+.player-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: var(--bg-dark);
+    border-top: 3px solid var(--pink-main);
+    padding: 15px;
+    box-shadow: 0 -5px 15px var(--pink-glow);
+    box-sizing: border-box;
+}
+
+/* Modal Styling */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 2000;
+}
+
+.modal-content {
+    background: var(--bg-dark);
+    border: 2px solid var(--pink-main);
+    width: 80%;
+    max-width: 400px;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 0 20px var(--pink-glow);
+}
+
+.progress-container {
+    width: 100%;
+    background: #444;
+    border-radius: 10px;
+    margin: 15px 0;
+}
+
+.progress-bar {
+    width: 0%;
+    height: 20px;
+    background: var(--pink-main);
+    border-radius: 10px;
+    text-align: center;
     font-size: 12px;
+    color: black;
 }
