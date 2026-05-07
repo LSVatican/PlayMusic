@@ -1,123 +1,181 @@
-let audioDatabase = JSON.parse(localStorage.getItem('playMusic_db')) || [];
-let currentAudio = new Audio();
+let db;
+const request = indexedDB.open("PlayMusicDB", 1);
+const audio = document.getElementById('mainAudio');
+let playlist = [];
 let currentIndex = -1;
 
-const audioListDiv = document.getElementById('audioList');
-const uploadModal = document.getElementById('uploadModal');
+// Inisialisasi Database
+request.onupgradeneeded = (e) => {
+    db = e.target.result;
+    db.createObjectStore("songs", { keyPath: "id", autoIncrement: true });
+};
 
-// --- Inisialisasi Perizinan Browser ---
+request.onsuccess = (e) => {
+    db = e.target.result;
+    loadSongs();
+};
+
+// Cek Perizinan Audio Browser
 window.addEventListener('load', () => {
-    renderList(audioDatabase);
-    if (confirm("Izinkan PlayMusic memutar suara secara otomatis?")) {
-        console.log("Izin diberikan.");
+    if (localStorage.getItem('audioAllowed') !== 'true') {
+        document.getElementById('permissionModal').style.display = 'block';
     }
 });
 
-// --- Fungsi Render List ---
-function renderList(data) {
-    audioListDiv.innerHTML = '';
-    data.forEach((item, index) => {
-        const div = document.createElement('div');
-        div.className = 'audio-item';
-        div.innerHTML = `
-            <div onclick="playAudio(${index})">
-                <strong>${item.name}</strong><br>
-                <small>${item.size} MB | ${item.date}</small>
+document.getElementById('grantPermission').onclick = () => {
+    localStorage.setItem('audioAllowed', 'true');
+    document.getElementById('permissionModal').style.display = 'none';
+};
+
+// Fungsi Unggah
+document.getElementById('openUploadBtn').onclick = () => document.getElementById('uploadModal').style.display = 'block';
+document.getElementById('closeUpload').onclick = () => document.getElementById('uploadModal').style.display = 'none';
+
+document.getElementById('uploadBtn').onclick = async () => {
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+    if (!file) return alert("Pilih file dulu!");
+
+    const validFormats = ['audio/mpeg', 'audio/wav', 'audio/ogg'];
+    if (!validFormats.includes(file.type)) return alert("Format tidak didukung!");
+
+    document.getElementById('progressContainer').style.display = 'block';
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += 10;
+        document.getElementById('progressBar').style.width = progress + '%';
+        document.getElementById('progressText').innerText = progress + '%';
+        
+        if (progress >= 100) {
+            clearInterval(interval);
+            saveToDB(file);
+        }
+    }, 200);
+};
+
+function saveToDB(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const transaction = db.transaction(["songs"], "readwrite");
+        const song = {
+            title: file.name,
+            data: e.target.result,
+            size: (file.size / 1024 / 1024).toFixed(2) + " MB",
+            date: new Date().toLocaleString()
+        };
+        transaction.objectStore("songs").add(song);
+        transaction.oncomplete = () => {
+            document.getElementById('uploadModal').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'none';
+            loadSongs();
+        };
+    };
+    reader.readAsDataURL(file);
+}
+
+// Load & Render List
+function loadSongs() {
+    const transaction = db.transaction(["songs"], "readonly");
+    const store = transaction.objectStore("songs");
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+        playlist = request.result;
+        renderList(playlist);
+    };
+}
+
+function renderList(songs) {
+    const listDiv = document.getElementById('audioList');
+    listDiv.innerHTML = "";
+    songs.forEach((song, index) => {
+        const item = document.createElement('div');
+        item.className = 'audio-item';
+        item.innerHTML = `
+            <div class="audio-info" onclick="playSong(${index})">
+                <h4>${song.title}</h4>
+                <small>${song.size} • ${song.date}</small>
             </div>
-            <button onclick="deleteAudio(${index})">Hapus</button>
+            <button onclick="deleteSong(${song.id})" style="color:red; background:none; border:none; cursor:pointer;">Hapus</button>
         `;
-        audioListDiv.appendChild(div);
+        listDiv.appendChild(item);
     });
 }
 
-// --- Logika Upload & Progress Bar ---
-document.getElementById('openUploadBtn').onclick = () => uploadModal.style.display = 'flex';
-document.getElementById('closeModal').onclick = () => uploadModal.style.display = 'none';
+// Kontrol Pemutar
+function playSong(index) {
+    currentIndex = index;
+    const song = playlist[index];
+    audio.src = song.data;
+    document.getElementById('currentTitle').innerText = song.title;
+    document.getElementById('playerBar').style.display = 'block';
+    audio.play();
+    updateMediaSession(song.title);
+}
 
-document.getElementById('startUpload').onclick = function() {
-    const file = document.getElementById('audioFile').files[0];
-    if (!file) return alert("Pilih file!");
-
-    const reader = new FileReader();
-    document.getElementById('progressContainer').style.display = 'block';
-
-    reader.onprogress = (e) => {
-        if (e.lengthComputable) {
-            const percent = Math.round((e.loaded / e.total) * 100);
-            document.getElementById('progressBar').style.width = percent + '%';
-            document.getElementById('progressPercent').innerText = percent + '%';
-        }
-    };
-
-    reader.onload = (e) => {
-        const newAudio = {
-            name: file.name,
-            size: (file.size / (1024 * 1024)).toFixed(2),
-            date: new Date().toLocaleString(),
-            src: e.target.result // Base64 storage
-        };
-        audioDatabase.push(newAudio);
-        localStorage.setItem('playMusic_db', JSON.stringify(audioDatabase));
-        
-        setTimeout(() => {
-            uploadModal.style.display = 'none';
-            document.getElementById('progressContainer').style.display = 'none';
-            renderList(audioDatabase);
-        }, 500);
-    };
-    reader.readAsDataURL(file);
+document.getElementById('playPauseBtn').onclick = () => {
+    if (audio.paused) audio.play();
+    else audio.pause();
 };
 
-// --- Logika Pemutar ---
-function playAudio(index) {
-    currentIndex = index;
-    const item = audioDatabase[index];
-    currentAudio.src = item.src;
-    currentAudio.play();
-    
-    document.getElementById('playerBar').style.display = 'flex';
-    document.getElementById('playerTitle').innerText = item.name;
-    document.getElementById('playPauseBtn').innerText = '⏸';
+document.getElementById('nextBtn').onclick = () => {
+    if (currentIndex < playlist.length - 1) playSong(currentIndex + 1);
+};
 
-    // Metadata & Media Session (Favicon di Control Panel Browser)
+document.getElementById('prevBtn').onclick = () => {
+    if (currentIndex > 0) playSong(currentIndex - 1);
+};
+
+document.getElementById('stopBtn').onclick = () => {
+    audio.pause();
+    document.getElementById('playerBar').style.display = 'none';
+};
+
+// Update Progress Bar Slider
+audio.ontimeupdate = () => {
+    const slider = document.getElementById('seekSlider');
+    const timeDisplay = document.getElementById('currentTimeDisplay');
+    const current = formatTime(audio.currentTime);
+    const duration = formatTime(audio.duration || 0);
+    
+    slider.value = (audio.currentTime / audio.duration) * 100 || 0;
+    timeDisplay.innerText = `${current} / ${duration}`;
+};
+
+document.getElementById('seekSlider').oninput = (e) => {
+    audio.currentTime = (e.target.value / 100) * audio.duration;
+};
+
+function formatTime(sec) {
+    let min = Math.floor(sec / 60);
+    let s = Math.floor(sec % 60);
+    return `${min}:${s < 10 ? '0'+s : s}`;
+}
+
+// Media Session (Favicon di Control Center Browser)
+function updateMediaSession(title) {
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
-            title: item.name,
-            artist: 'Daus XD',
-            artwork: [{ src: '/Favicon.png', sizes: '96x96', type: 'image/png' }]
+            title: title,
+            artist: 'PlayMusic',
+            album: 'Daus XD Collection',
+            artwork: [{ src: '/Favicon.png', sizes: '512x512', type: 'image/png' }]
         });
     }
 }
 
-// Tombol Play/Pause
-document.getElementById('playPauseBtn').onclick = () => {
-    if (currentAudio.paused) {
-        currentAudio.play();
-        document.getElementById('playPauseBtn').innerText = '⏸';
-    } else {
-        currentAudio.pause();
-        document.getElementById('playPauseBtn').innerText = '▶';
+// Hapus Audio
+window.deleteSong = (id) => {
+    if (confirm("Hapus lagu ini secara permanen?")) {
+        const transaction = db.transaction(["songs"], "readwrite");
+        transaction.objectStore("songs").delete(id);
+        transaction.oncomplete = () => loadSongs();
     }
 };
 
-// Fitur Hapus
-function deleteAudio(index) {
-    if (confirm("Hapus audio ini secara permanen?")) {
-        audioDatabase.splice(index, 1);
-        localStorage.setItem('playMusic_db', JSON.stringify(audioDatabase));
-        renderList(audioDatabase);
-    }
-}
-
-// --- Fitur Pencarian ---
+// Pencarian & Filter
 document.getElementById('searchInput').oninput = (e) => {
     const val = e.target.value.toLowerCase();
-    const filtered = audioDatabase.filter(a => a.name.toLowerCase().includes(val));
+    const filtered = playlist.filter(s => s.title.toLowerCase().includes(val));
     renderList(filtered);
-};
-
-// Penanganan Stop/Close Player
-document.getElementById('stopBtn').onclick = () => {
-    currentAudio.pause();
-    document.getElementById('playerBar').style.display = 'none';
 };
