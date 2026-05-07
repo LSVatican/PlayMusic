@@ -1,91 +1,91 @@
 let db;
+const request = indexedDB.open("PlayMusicDB", 1);
+
+request.onupgradeneeded = (e) => {
+    db = e.target.result;
+    db.createObjectStore("songs", { keyPath: "id", autoIncrement: true });
+};
+
+request.onsuccess = (e) => {
+    db = e.target.result;
+    displaySongs();
+    checkAudioPermission();
+};
+
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let currentAudio = new Audio();
 let playlist = [];
 let currentIndex = -1;
 
-// 1. Inisialisasi Database
-const request = indexedDB.open("PlayMusicDB", 1);
-request.onupgradeneeded = (e) => {
-    db = e.target.result;
-    db.createObjectStore("songs", { keyPath: "id", autoIncrement: true });
-};
-request.onsuccess = (e) => {
-    db = e.target.result;
-    displaySongs();
-};
+// --- DOM Elements ---
+const uploadModal = document.getElementById('uploadModal');
+const permissionModal = document.getElementById('permissionModal');
+const audioList = document.getElementById('audioList');
+const searchInput = document.getElementById('searchInput');
 
-// 2. Perizinan Browser
-window.addEventListener('load', () => {
-    if (localStorage.getItem('audioAllowed')) {
-        document.getElementById('permissionModal').style.display = 'none';
-    } else {
-        document.getElementById('permissionModal').style.display = 'block';
+// --- Perizinan Suara ---
+function checkAudioPermission() {
+    if (localStorage.getItem('audioPermitted') !== 'true') {
+        permissionModal.style.display = 'block';
     }
-});
+}
 
-document.getElementById('allowAudioBtn').onclick = () => {
+document.getElementById('grantPermissionBtn').onclick = () => {
     audioContext.resume().then(() => {
-        localStorage.setItem('audioAllowed', 'true');
-        document.getElementById('permissionModal').style.display = 'none';
+        localStorage.setItem('audioPermitted', 'true');
+        permissionModal.style.display = 'none';
     });
 };
 
-// 3. Fungsi Unggah & Progress Bar
-document.getElementById('audioFile').onchange = function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+// --- Unggah Audio ---
+document.getElementById('openUploadBtn').onclick = () => uploadModal.style.display = 'block';
+document.querySelector('.close').onclick = () => uploadModal.style.display = 'none';
 
-    const validFormats = ['audio/mpeg', 'audio/wav', 'audio/ogg'];
-    if (!validFormats.includes(file.type)) {
-        alert("Format tidak didukung!");
-        return;
-    }
+document.getElementById('startUploadBtn').onclick = () => {
+    const file = document.getElementById('audioFileInput').files[0];
+    if (!file) return alert("Pilih file!");
 
-    const progContainer = document.getElementById('progressContainer');
-    const progBar = document.getElementById('progressBar');
-    progContainer.style.display = 'block';
+    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/x-m4a', 'audio/mp3'];
+    if (!allowedTypes.includes(file.type)) return alert("Format tidak didukung!");
 
-    // Simulasi Progress Bar
-    let progress = 0;
-    const interval = setInterval(() => {
-        progress += 10;
-        progBar.style.width = progress + '%';
-        progBar.innerText = progress + '%';
-        
-        if (progress >= 100) {
-            clearInterval(interval);
-            saveToDB(file);
+    const reader = new FileReader();
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+
+    progressContainer.style.display = 'block';
+
+    reader.onprogress = (e) => {
+        if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percent + '%';
+            progressBar.innerText = percent + '%';
         }
-    }, 100);
+    };
+
+    reader.onload = (e) => {
+        const songData = {
+            title: file.name,
+            size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
+            date: new Date().toLocaleString(),
+            blob: e.target.result,
+            lastPlayed: 0
+        };
+
+        const transaction = db.transaction(["songs"], "readwrite");
+        transaction.objectStore("songs").add(songData);
+
+        transaction.oncomplete = () => {
+            uploadModal.style.display = 'none';
+            progressContainer.style.display = 'none';
+            displaySongs();
+        };
+    };
+
+    reader.readAsDataURL(file);
 };
 
-function saveToDB(file) {
-    const transaction = db.transaction(["songs"], "readwrite");
-    const store = transaction.objectStore("songs");
-    
-    const newSong = {
-        name: file.name,
-        data: file,
-        size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
-        date: new Date().toLocaleString()
-    };
-
-    store.add(newSong);
-    transaction.oncomplete = () => {
-        document.getElementById('uploadModal').style.display = 'none';
-        document.getElementById('progressContainer').style.display = 'none';
-        displaySongs();
-    };
-}
-
-// 4. Tampilkan List & Filter
-function displaySongs() {
-    const container = document.getElementById('audioList');
-    container.innerHTML = "";
-    const filter = document.getElementById('filterSelect').value;
-    const search = document.getElementById('searchInput').value.toLowerCase();
-
+// --- Display & Filter ---
+async function displaySongs(filter = "terbaru", query = "") {
     const transaction = db.transaction(["songs"], "readonly");
     const store = transaction.objectStore("songs");
     const request = store.getAll();
@@ -95,41 +95,47 @@ function displaySongs() {
         playlist = songs;
 
         // Pencarian
-        songs = songs.filter(s => s.name.toLowerCase().includes(search));
+        if (query) {
+            songs = songs.filter(s => s.title.toLowerCase().includes(query.toLowerCase()));
+        }
 
-        // Sorting
-        if (filter === "nama") songs.sort((a,b) => a.name.localeCompare(b.name));
-        if (filter === "terlama") songs.reverse();
+        // Filter
+        if (filter === "terbaru") songs.sort((a, b) => b.id - a.id);
+        if (filter === "terlama") songs.sort((a, b) => a.id - b.id);
+        if (filter === "terakhir") songs.sort((a, b) => b.lastPlayed - a.lastPlayed);
 
+        audioList.innerHTML = "";
         songs.forEach((song, index) => {
             const div = document.createElement('div');
             div.className = "audio-item";
             div.innerHTML = `
-                <div onclick="playSong(${song.id})">
-                    <strong>${song.name}</strong><br>
-                    <small>${song.size} | ${song.date}</small>
+                <div class="audio-info" onclick="playSong(${song.id})">
+                    <h4>${song.title}</h4>
+                    <p>${song.size} | Diunggah: ${song.date}</p>
                 </div>
-                <button onclick="deleteSong(${song.id})" style="background:red; color:white; border:none; padding:5px;">Hapus</button>
+                <button class="glow-btn" style="padding:5px 10px" onclick="deleteSong(${song.id})">Hapus</button>
             `;
-            container.appendChild(div);
+            audioList.appendChild(div);
         });
     };
 }
 
-// 5. Player Controls
+// --- Player Logic ---
 function playSong(id) {
-    const transaction = db.transaction(["songs"], "readonly");
+    const transaction = db.transaction(["songs"], "readwrite");
     const store = transaction.objectStore("songs");
-    const request = store.get(id);
-
-    request.onsuccess = () => {
-        const song = request.result;
-        const url = URL.createObjectURL(song.data);
-        currentAudio.src = url;
+    store.get(id).onsuccess = (e) => {
+        const song = e.target.result;
+        currentAudio.src = song.blob;
         currentAudio.play();
         
-        document.getElementById('playerBar').style.display = 'block';
-        document.getElementById('currentTitle').innerText = song.name;
+        document.getElementById('bottomPlayer').style.display = 'flex';
+        document.getElementById('currentTitle').innerText = song.title;
+        document.getElementById('playPauseBtn').innerText = "⏸";
+
+        // Update last played
+        song.lastPlayed = Date.now();
+        store.put(song);
         currentIndex = playlist.findIndex(s => s.id === id);
     };
 }
@@ -144,24 +150,20 @@ document.getElementById('playPauseBtn').onclick = () => {
     }
 };
 
-document.getElementById('closePlayer').onclick = () => {
+document.getElementById('stopBtn').onclick = () => {
     currentAudio.pause();
-    document.getElementById('playerBar').style.display = 'none';
+    currentAudio.currentTime = 0;
+    document.getElementById('bottomPlayer').style.display = 'none';
 };
 
-// 6. Hapus Audio
 function deleteSong(id) {
-    if (confirm("Hapus lagu ini secara permanen?")) {
+    if (confirm("Hapus audio ini secara permanen?")) {
         const transaction = db.transaction(["songs"], "readwrite");
         transaction.objectStore("songs").delete(id);
         transaction.oncomplete = () => displaySongs();
     }
 }
 
-// Search & Filter Event
-document.getElementById('searchInput').oninput = displaySongs;
-document.getElementById('filterSelect').onchange = displaySongs;
-
-// Modal Open/Close Logic
-document.getElementById('openUploadBtn').onclick = () => document.getElementById('uploadModal').style.display = 'block';
-document.querySelector('.close').onclick = () => document.getElementById('uploadModal').style.display = 'none';
+// Search & Filter Listeners
+searchInput.oninput = () => displaySongs(document.getElementById('filterSelect').value, searchInput.value);
+document.getElementById('filterSelect').onchange = (e) => displaySongs(e.target.value, searchInput.value);
