@@ -134,8 +134,8 @@ function playTrack(index) {
             artist: 'PlayMusic - Daus XD',
             album: 'Koleksi Saya',
             artwork: [
-                { src: 'favicon.png', sizes: '96x96', type: 'image/png' },
-                { src: 'favicon.png', sizes: '512x512', type: 'image/png' }
+                { src: '/Favicon.png', sizes: '96x96', type: 'image/png' },
+                { src: '/Favicon.png', sizes: '512x512', type: 'image/png' }
             ]
         });
 
