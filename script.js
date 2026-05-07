@@ -113,6 +113,9 @@ function playAudio(index) {
     document.getElementById("playerTitle").innerText = "Memutar: " + song.title;
     document.getElementById("playBtn").innerHTML = '<i class="fa fa-pause"></i>';
     
+    // TAMBAHKAN BARIS INI:
+    updateMediaMetadata(song);
+    
     updateDuration();
 }
 
@@ -201,3 +204,34 @@ function playPrev() {
 currentAudio.onended = () => {
     playNext();
 };
+
+// --- MENGHUBUNGKAN KE KONTROL MEDIA BAWAAN BROWSER/SISTEM ---
+if ('mediaSession' in navigator) {
+    navigator.mediaSession.setActionHandler('play', () => {
+        togglePlay();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+        togglePlay();
+    });
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+        playPrev();
+    });
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+        playNext();
+    });
+}
+
+// Fungsi untuk memperbarui info lagu di panel browser
+function updateMediaMetadata(song) {
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: song.title,
+            artist: 'Daus XD',
+            album: 'PlayMusic',
+            artwork: [
+                { src: 'favicon.ico', sizes: '96x96', type: 'image/png' },
+                { src: 'favicon.ico', sizes: '512x512', type: 'image/png' }
+            ]
+        });
+    }
+}
